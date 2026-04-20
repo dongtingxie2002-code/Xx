@@ -16,11 +16,16 @@
   const rnd = mulberry32(4242);
 
   // ── Formatters ────────────────────────────────────────────────────
-  const fmtUSD = (n, frac = 0) => n.toLocaleString('en-US', {
-    style: 'currency', currency: 'USD',
+  // Locale and base currency are read at call time so a preferences
+  // change re-formats every subsequent render.
+  let numLocale = 'en-US';
+  let baseCcy   = 'USD';
+  const fxRates = { USD: 1, CHF: 0.91, EUR: 0.93, GBP: 0.79, SGD: 1.34, JPY: 154 };
+  const fmtUSD = (n, frac = 0) => ((+n || 0) * (fxRates[baseCcy] || 1)).toLocaleString(numLocale, {
+    style: 'currency', currency: baseCcy,
     minimumFractionDigits: frac, maximumFractionDigits: frac,
   });
-  const fmtNum = (n, frac = 2) => n.toLocaleString('en-US', {
+  const fmtNum = (n, frac = 2) => (+n || 0).toLocaleString(numLocale, {
     minimumFractionDigits: frac, maximumFractionDigits: frac,
   });
   const fmtPct = (n) => (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
@@ -678,6 +683,25 @@
     setTimeout(closeModal, 600);
   });
 
+  // ── Private Markets & Cash stores ───────────────────────────────
+  const PM_KEY   = 'av-pm-v1';
+  const CASH_KEY = 'av-cash-v1';
+  const PREF_KEY = 'av-prefs-v1';
+  const seedPM = [
+    { id: 'pm-1', name: 'Sequoia Capital Global Growth IV',  strategy: 'Venture',     vintage: 2022, committed: 20, called: 15, distributed: 0,   nav: 14.8, metric: 'TVPI 1.61×' },
+    { id: 'pm-2', name: 'Blackstone Real Estate Partners X', strategy: 'Real Estate', vintage: 2023, committed: 14, called: 9,  distributed: 2.2, nav: 9.2,  metric: 'DPI 0.24×' },
+    { id: 'pm-3', name: 'Carlyle Partners VIII',             strategy: 'Buyout',      vintage: 2021, committed: 15, called: 11, distributed: 4.8, nav: 11.4, metric: 'IRR 18.2%' },
+    { id: 'pm-4', name: 'Ashford Art & Collectibles Vehicle',strategy: 'Collectibles',vintage: 2020, committed: 8,  called: 6,  distributed: 0,   nav: 7.9,  metric: 'Mark 1.09×' },
+  ];
+  const seedCash = [
+    { id: 'c-1', ccy: 'USD', bal: 18402117, bank: 'JPM Private Bank' },
+    { id: 'c-2', ccy: 'CHF', bal: 4210800,  bank: 'Pictet & Cie' },
+    { id: 'c-3', ccy: 'GBP', bal: 2980400,  bank: 'Coutts' },
+    { id: 'c-4', ccy: 'EUR', bal: 3612250,  bank: 'Lombard Odier' },
+    { id: 'c-5', ccy: 'SGD', bal: 1845900,  bank: 'DBS Private' },
+    { id: 'c-6', ccy: 'AED', bal: 2140000,  bank: 'Emirates NBD' },
+  ];
+
   // ── Transaction store (persisted to localStorage) ────────────────
   const TX_KEY = 'av-transactions-v1';
   const PX_KEY = 'av-manual-prices-v1';
@@ -788,6 +812,14 @@
     $('[data-anim="aum"]').textContent = fmtUSD(aum);
     $('[data-anim="pnl"]').textContent = (pnl >= 0 ? '+' : '') + fmtUSD(pnl);
     $('[data-anim="pnl"]').className = 'kpi__value ' + signCls(pnl);
+    const cbEl = $('#kpi-costbasis');
+    if (cbEl) cbEl.textContent = fmtUSD(costBasis);
+    const pnlPctEl = $('#kpi-pnlpct');
+    if (pnlPctEl) {
+      const pct = (pnl / costBasis) * 100;
+      pnlPctEl.className = signCls(pct);
+      pnlPctEl.textContent = fmtPct(pct);
+    }
     $('[data-anim="day"]').textContent = (dayPnl >= 0 ? '+' : '') + fmtUSD(dayPnl);
     $('[data-anim="day"]').className = 'kpi__value ' + signCls(dayPnl);
     $('#kpi-aum-delta').className = signCls(dayPnl);
@@ -982,24 +1014,55 @@
   const txCount = $('#tx-count');
   const txLast  = $('#tx-last');
 
+  let feedFilterType = 'ALL';
+  let feedQuery = '';
+
   const renderFeed = () => {
     if (!feedEl) return;
+    txCount.textContent = transactions.length;
+    txLast.textContent  = transactions.length
+      ? fmtDateLong(transactions.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0].date)
+      : 'never';
+
     if (!transactions.length) {
       feedEl.innerHTML = `<li class="empty"><span class="big">No transactions yet</span><span>Use <strong>+ New</strong> to record a trade, dividend or capital event.</span></li>`;
-    } else {
-      const sorted = transactions.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.id || '').localeCompare(a.id || ''));
-      feedEl.innerHTML = sorted.map((t) => `
-        <li data-id="${t.id}">
-          <span class="feed__dot ${dotClassFor(t.type)}">${t.type}</span>
-          <div>
-            <strong>${describeTx(t)}</strong>
-            <span class="muted">${txMeta(t)}</span>
-          </div>
-        </li>`).join('');
+      return;
     }
-    txCount.textContent = transactions.length;
-    txLast.textContent  = transactions.length ? fmtDateLong(transactions.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0].date) : 'never';
+
+    const q = feedQuery.trim().toLowerCase();
+    let filtered = transactions.slice();
+    if (feedFilterType !== 'ALL') filtered = filtered.filter((t) => t.type === feedFilterType);
+    if (q) filtered = filtered.filter((t) => [t.symbol, t.broker, t.notes, t.type].some((v) => (v || '').toString().toLowerCase().includes(q)));
+
+    filtered.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.id || '').localeCompare(a.id || ''));
+
+    if (!filtered.length) {
+      feedEl.innerHTML = `<li class="empty"><span class="big">No matches</span><span>Try a different filter or clear the search.</span></li>`;
+      return;
+    }
+
+    feedEl.innerHTML = filtered.map((t) => `
+      <li data-id="${t.id}">
+        <span class="feed__dot ${dotClassFor(t.type)}">${t.type}</span>
+        <div>
+          <strong>${describeTx(t)}</strong>
+          <span class="muted">${txMeta(t)}</span>
+        </div>
+      </li>`).join('');
   };
+
+  // Wire pills + search
+  $('#feed-pills')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-type]');
+    if (!btn) return;
+    feedFilterType = btn.dataset.type;
+    $$('#feed-pills button').forEach((b) => b.classList.toggle('is-active', b === btn));
+    renderFeed();
+  });
+  $('#feed-q')?.addEventListener('input', (e) => {
+    feedQuery = e.target.value;
+    renderFeed();
+  });
 
   feedEl?.addEventListener('click', (e) => {
     const li = e.target.closest('li[data-id]');
@@ -1345,6 +1408,9 @@
     out.push({ kind: 'action', label: 'Export transactions (JSON)', group: 'Action', k: '↓',  act: () => $('#tx-export').click() });
     out.push({ kind: 'action', label: 'Import transactions (JSON)', group: 'Action', k: '↑',  act: () => $('#tx-import').click() });
     out.push({ kind: 'action', label: 'Toggle day / night theme',   group: 'Action', k: '☼',  act: () => themeBtn.click() });
+    out.push({ kind: 'action', label: 'Open preferences',           group: 'Action', k: '⚙',  act: () => $('#prefs-btn').click() });
+    out.push({ kind: 'action', label: 'Add private-market holding', group: 'Action', k: '+',  act: () => $('#pm-add').click() });
+    out.push({ kind: 'action', label: 'Add cash account',           group: 'Action', k: '+',  act: () => $('#cash-add').click() });
     // Holdings
     holdings.forEach((h) => out.push({
       kind: 'holding', sym: h.sym, label: `${h.sym} · ${h.name}`, group: 'Holding', k: h.sym.slice(0, 2),
@@ -1586,6 +1652,177 @@
     });
   };
 
+  // ── Private Markets CRUD ────────────────────────────────────────
+  const flagFor = (ccy) => ({
+    USD: '🇺🇸', CHF: '🇨🇭', EUR: '🇪🇺', GBP: '🇬🇧', JPY: '🇯🇵',
+    SGD: '🇸🇬', HKD: '🇭🇰', AED: '🇦🇪', CAD: '🇨🇦', AUD: '🇦🇺',
+  }[ccy] || '💱');
+
+  let pmItems = storageGet(PM_KEY, null);
+  if (!Array.isArray(pmItems)) { pmItems = seedPM.slice(); storageSet(PM_KEY, pmItems); }
+
+  let cashItems = storageGet(CASH_KEY, null);
+  if (!Array.isArray(cashItems)) { cashItems = seedCash.slice(); storageSet(CASH_KEY, cashItems); }
+
+  const fmtMillions = (m) => {
+    if (!Number.isFinite(m)) return '—';
+    if (Math.abs(m) >= 1) return '$' + m.toFixed(1) + 'M';
+    return '$' + (m * 1000).toFixed(0) + 'K';
+  };
+  const renderPM = () => {
+    const list = $('#pm-list');
+    if (!list) return;
+    if (!pmItems.length) {
+      list.innerHTML = `<li class="empty" style="grid-template-columns:1fr;text-align:center;padding:18px;color:var(--ink-2)">No private-market investments yet. Use <strong>+ Add</strong>.</li>`;
+    } else {
+      list.innerHTML = pmItems.map((p) => `
+        <li data-id="${p.id}">
+          <div>
+            <strong>${p.name}</strong>
+            <span class="muted">${p.strategy}${p.vintage ? ' · Vintage ' + p.vintage : ''}</span>
+          </div>
+          <div class="num">
+            <strong>${fmtMillions(p.nav)}</strong>
+            <span class="${/[-]/.test(String(p.metric)) ? 'down' : 'up'}">${p.metric || ''}</span>
+          </div>
+        </li>`).join('');
+    }
+    const committed = pmItems.reduce((s, p) => s + (+p.committed || 0), 0);
+    const called    = pmItems.reduce((s, p) => s + (+p.called || 0), 0);
+    const distrib   = pmItems.reduce((s, p) => s + (+p.distributed || 0), 0);
+    $('#pm-foot').innerHTML = `Committed ${fmtMillions(committed)} · Called ${fmtMillions(called)} · Distributed ${fmtMillions(distrib)}`;
+  };
+
+  const pmModal = $('#pm-modal');
+  const pmForm  = $('#pm-form');
+  const openPMModal = (id = null) => {
+    pmForm.reset();
+    if (id) {
+      const p = pmItems.find((x) => x.id === id);
+      if (!p) return;
+      $('#pm-title').textContent = 'Edit private-market investment';
+      $('#pm-id').value = p.id;
+      $('#pm-name').value = p.name;
+      $('#pm-strategy').value = p.strategy;
+      $('#pm-vintage').value = p.vintage || '';
+      $('#pm-committed').value = p.committed ?? '';
+      $('#pm-called').value = p.called ?? '';
+      $('#pm-distributed').value = p.distributed ?? '';
+      $('#pm-nav').value = p.nav ?? '';
+      $('#pm-metric').value = p.metric || '';
+      $('#pm-delete').hidden = false;
+    } else {
+      $('#pm-title').textContent = 'Add private-market investment';
+      $('#pm-id').value = '';
+      $('#pm-delete').hidden = true;
+    }
+    pmModal.hidden = false;
+    setTimeout(() => $('#pm-name').focus(), 40);
+  };
+  $('#pm-add')?.addEventListener('click', () => openPMModal(null));
+  pmModal?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => pmModal.hidden = true));
+  $('#pm-list')?.addEventListener('click', (e) => {
+    const li = e.target.closest('li[data-id]');
+    if (li) openPMModal(li.dataset.id);
+  });
+  pmForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = {
+      id:           $('#pm-id').value || ('pm-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6)),
+      name:         $('#pm-name').value.trim(),
+      strategy:     $('#pm-strategy').value,
+      vintage:      $('#pm-vintage').value ? +$('#pm-vintage').value : null,
+      committed:    $('#pm-committed').value ? +$('#pm-committed').value : 0,
+      called:       $('#pm-called').value ? +$('#pm-called').value : 0,
+      distributed:  $('#pm-distributed').value ? +$('#pm-distributed').value : 0,
+      nav:          +$('#pm-nav').value || 0,
+      metric:       $('#pm-metric').value.trim(),
+    };
+    if (!data.name) return;
+    const idx = pmItems.findIndex((x) => x.id === data.id);
+    if (idx >= 0) pmItems[idx] = data; else pmItems.push(data);
+    storageSet(PM_KEY, pmItems);
+    renderPM();
+    pmModal.hidden = true;
+  });
+  $('#pm-delete')?.addEventListener('click', () => {
+    const id = $('#pm-id').value;
+    if (!id || !confirm('Remove this private-market investment?')) return;
+    pmItems = pmItems.filter((x) => x.id !== id);
+    storageSet(PM_KEY, pmItems);
+    renderPM();
+    pmModal.hidden = true;
+  });
+
+  // ── Cash & FX CRUD ──────────────────────────────────────────────
+  const ccySymbol = { USD: '$', CHF: 'CHF ', EUR: '€', GBP: '£', JPY: '¥', SGD: 'S$', HKD: 'HK$', AED: 'د.إ ', CAD: 'C$', AUD: 'A$' };
+  const renderCash = () => {
+    const list = $('#cash-list');
+    if (!list) return;
+    if (!cashItems.length) {
+      list.innerHTML = `<li class="empty" style="grid-template-columns:1fr;text-align:center;padding:18px;color:var(--ink-2)">No cash accounts yet. Use <strong>+ Add</strong>.</li>`;
+    } else {
+      list.innerHTML = cashItems.map((c) => `
+        <li data-id="${c.id}">
+          <span class="flag">${flagFor(c.ccy)}</span>
+          <strong>${c.ccy}</strong>
+          <span class="num">${ccySymbol[c.ccy] || (c.ccy + ' ')}${(+c.bal || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+          <span class="muted">${c.bank}</span>
+        </li>`).join('');
+    }
+    $('#cash-count').textContent = `${cashItems.length} custodian${cashItems.length === 1 ? '' : 's'}`;
+  };
+  const cashModal = $('#cash-modal');
+  const cashForm  = $('#cash-form');
+  const openCashModal = (id = null) => {
+    cashForm.reset();
+    if (id) {
+      const c = cashItems.find((x) => x.id === id);
+      if (!c) return;
+      $('#cash-title').textContent = 'Edit cash account';
+      $('#cash-id').value  = c.id;
+      $('#cash-ccy').value = c.ccy;
+      $('#cash-bal').value = c.bal;
+      $('#cash-bank').value = c.bank;
+      $('#cash-delete').hidden = false;
+    } else {
+      $('#cash-title').textContent = 'Add cash account';
+      $('#cash-id').value = '';
+      $('#cash-delete').hidden = true;
+    }
+    cashModal.hidden = false;
+    setTimeout(() => $('#cash-bank').focus(), 40);
+  };
+  $('#cash-add')?.addEventListener('click', () => openCashModal(null));
+  cashModal?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => cashModal.hidden = true));
+  $('#cash-list')?.addEventListener('click', (e) => {
+    const li = e.target.closest('li[data-id]');
+    if (li) openCashModal(li.dataset.id);
+  });
+  cashForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = {
+      id:   $('#cash-id').value || ('c-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6)),
+      ccy:  $('#cash-ccy').value,
+      bal:  +$('#cash-bal').value || 0,
+      bank: $('#cash-bank').value.trim(),
+    };
+    if (!data.bank) return;
+    const idx = cashItems.findIndex((x) => x.id === data.id);
+    if (idx >= 0) cashItems[idx] = data; else cashItems.push(data);
+    storageSet(CASH_KEY, cashItems);
+    renderCash();
+    cashModal.hidden = true;
+  });
+  $('#cash-delete')?.addEventListener('click', () => {
+    const id = $('#cash-id').value;
+    if (!id || !confirm('Remove this cash account?')) return;
+    cashItems = cashItems.filter((x) => x.id !== id);
+    storageSet(CASH_KEY, cashItems);
+    renderCash();
+    cashModal.hidden = true;
+  });
+
   // ── Export statement (CSV) ──────────────────────────────────────
   const exportStatementCSV = () => {
     const totalMV = holdings.reduce((s, h) => s + h.qty * h.px, 0);
@@ -1690,17 +1927,100 @@
     setTimeout(() => URL.revokeObjectURL(url), 200);
   });
 
-  // Run one tick immediately so % figures align with live state
+  // ── Preferences ─────────────────────────────────────────────────
+  const defaults = { ccy: 'USD', theme: savedTheme || 'night', tick: 1600, fmt: 'en-US' };
+  const prefs = Object.assign({}, defaults, storageGet(PREF_KEY, {}));
+
+  const applyPrefs = () => {
+    if (document.body.dataset.theme !== prefs.theme) {
+      document.body.dataset.theme = prefs.theme;
+      localStorage.setItem('av-theme', prefs.theme);
+      renderKpiSparks(); renderPerf(); renderDonut();
+    }
+    numLocale = prefs.fmt;
+    baseCcy   = prefs.ccy;
+    renderHoldings(); bindRowRemove(); applyRowTags();
+    renderWatch(); bindWatchRemove();
+    renderFeed();
+    renderPM(); renderCash();
+    recomputeAnalytics(); liveTick();
+  };
+  storageSet(PREF_KEY, prefs);
+
+  const prefsModal = $('#prefs-modal');
+  const prefsForm  = $('#prefs-form');
+  const openPrefs = () => {
+    $('#pref-ccy').value = prefs.ccy;
+    $('#pref-theme').value = prefs.theme;
+    $('#pref-tick').value = String(prefs.tick);
+    $('#pref-fmt').value = prefs.fmt;
+    prefsModal.hidden = false;
+  };
+  $('#prefs-btn')?.addEventListener('click', openPrefs);
+  prefsModal?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => prefsModal.hidden = true));
+  prefsForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const next = {
+      ccy: $('#pref-ccy').value,
+      theme: $('#pref-theme').value,
+      tick: +$('#pref-tick').value,
+      fmt: $('#pref-fmt').value,
+    };
+    Object.assign(prefs, next);
+    storageSet(PREF_KEY, prefs);
+    applyPrefs();
+    // Re-arm tick interval
+    if (tickTimer) clearInterval(tickTimer);
+    tickTimer = prefs.tick > 0 ? setInterval(tickStep, prefs.tick) : null;
+    prefsModal.hidden = true;
+  });
+  $('#prefs-reset')?.addEventListener('click', () => {
+    if (!confirm('This will remove ALL locally stored data (transactions, prices, watchlist, private markets, cash accounts, notifications and preferences) and reload the page. Continue?')) return;
+    ['av-transactions-v1', 'av-manual-prices-v1', 'av-watchlist-v1', 'av-pm-v1', 'av-cash-v1', 'av-notif-read-v1', 'av-prefs-v1', 'av-theme'].forEach((k) => localStorage.removeItem(k));
+    location.reload();
+  });
+
+  // ── Focus trap (keeps tabs inside an open modal) ────────────────
+  const focusableIn = (root) => $$('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])', root)
+    .filter((el) => !el.hasAttribute('disabled') && el.offsetParent !== null);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const openModal = $$('.modal:not([hidden])').pop();
+    if (!openModal) return;
+    const focusables = focusableIn(openModal);
+    if (!focusables.length) return;
+    const first = focusables[0], last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+
+  // Escape closes any open modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const openModal = $$('.modal:not([hidden])').pop();
+    if (openModal) openModal.hidden = true;
+  });
+
+  // ── Boot ────────────────────────────────────────────────────────
   renderFeed();
+  renderPM();
+  renderCash();
   recomputeAnalytics();
   liveTick();
   bindRowRemove();
   renderNotifs();
-  setInterval(() => {
+
+  let tickTimer;
+  const tickStep = () => {
     liveTick();
     bindRowRemove();
-    if (!notifPop.hidden) renderNotifs();
-  }, 1600);
+    if (notifPop && !notifPop.hidden) renderNotifs();
+  };
+  tickTimer = prefs.tick > 0 ? setInterval(tickStep, prefs.tick) : null;
+
+  // Apply any saved preferences at the end so first render is stable
+  applyPrefs();
 
   // Re-render perf chart on resize (keeps end-marker aligned)
   let r;

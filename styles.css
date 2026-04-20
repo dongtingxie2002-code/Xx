@@ -1025,6 +1025,54 @@ body.notif-open .badge{ background: var(--ink-3); color: var(--bg-0) }
 .reb-table .action.sell { color: var(--down); background: var(--down-soft); border: 1px solid rgba(216,107,107,.35) }
 .reb-table .action.hold { color: var(--ink-2); background: var(--bg-1);     border: 1px solid var(--line) }
 
+/* Feed filter bar ------------------------------------------------ */
+.feed-filters{
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 6px;
+}
+.feed-search{
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  border-radius: 999px;
+  color: var(--ink-2);
+}
+.feed-search input{
+  flex: 1; background: transparent; border: 0; outline: none;
+  color: var(--ink-0); font-size: 12.5px;
+}
+.feed-pills{ display: inline-flex; flex-wrap: wrap; gap: 4px }
+.feed-pills button{
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600; letter-spacing: .04em;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  color: var(--ink-2);
+}
+.feed-pills button:hover{ color: var(--ink-0) }
+.feed-pills button.is-active{
+  background: var(--bg-3); color: var(--ink-0);
+  border-color: var(--gold-deep);
+}
+
+/* Private markets row actions ----------------------------------- */
+.pm li{ cursor: pointer; transition: background .15s }
+.pm li:hover{ background: rgba(255,255,255,.02) }
+.cash li{ cursor: pointer; transition: background .15s }
+.cash li:hover{ background: rgba(255,255,255,.02) }
+
+/* Prefs ---------------------------------------------------------- */
+.prefs-danger{
+  margin-top: 14px; padding: 12px 14px;
+  border: 1px dashed rgba(216,107,107,.4);
+  border-radius: 10px;
+  background: var(--down-soft);
+}
+.prefs-danger .eyebrow{ color: var(--down) }
+
 /* Transaction form ----------------------------------------------- */
 .form-grid{
   display: grid;
