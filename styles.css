@@ -838,6 +838,193 @@ tr.is-manual td[data-field="px"]{ color: var(--gold-soft) }
   border-top: 1px solid var(--line-soft);
 }
 
+/* Popover (notifications) ---------------------------------------- */
+.notif-wrap{ position: relative }
+.popover{
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 340px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 30px 60px -25px rgba(0,0,0,.7);
+  z-index: 40;
+  overflow: hidden;
+  animation: modalIn .14s ease-out;
+}
+.popover[hidden]{ display: none }
+.popover__head{
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 12px;
+}
+.popover__list{
+  list-style: none; margin: 0; padding: 4px 0;
+  max-height: 60vh; overflow-y: auto;
+}
+.popover__list li{
+  display: grid;
+  grid-template-columns: 6px 1fr auto;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 12.5px;
+}
+.popover__list li:last-child{ border-bottom: 0 }
+.popover__list .pin{
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--gold); margin-top: 6px;
+}
+.popover__list .pin.up   { background: var(--up) }
+.popover__list .pin.down { background: var(--down) }
+.popover__list strong{ display: block; font-weight: 600 }
+.popover__list .time{ font-size: 11px; color: var(--ink-3); white-space: nowrap }
+.popover__list li.read .pin{ background: var(--ink-3); opacity: .5 }
+.popover__list .empty{ grid-template-columns: 1fr; color: var(--ink-2); text-align: center; padding: 24px 14px }
+body.notif-open .badge{ background: var(--ink-3); color: var(--bg-0) }
+
+/* Command palette ------------------------------------------------ */
+.modal--palette{ place-items: start center; padding-top: 9vh }
+.modal--palette .modal__backdrop{ background: rgba(8,10,14,.55) }
+.palette{
+  position: relative;
+  width: min(640px, 92vw);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 40px 80px -30px rgba(0,0,0,.8);
+  overflow: hidden;
+  animation: modalIn .16s ease-out;
+}
+.palette__input{
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink-2);
+}
+.palette__input input{
+  flex: 1; background: transparent; border: 0; outline: none;
+  color: var(--ink-0); font-size: 15px;
+}
+.palette__input kbd{
+  font-family: var(--font-mono); font-size: 10.5px;
+  padding: 2px 6px; border-radius: 4px;
+  background: var(--bg-1); color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.palette__list{
+  list-style: none; margin: 0; padding: 6px 0;
+  max-height: 48vh; overflow-y: auto;
+}
+.palette__list li{
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center; gap: 12px;
+  padding: 9px 16px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.palette__list li.is-active{ background: rgba(200,168,107,.12) }
+.palette__list .k{
+  width: 28px; height: 28px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: var(--bg-1); border: 1px solid var(--line);
+  font-size: 10.5px; color: var(--ink-2);
+  font-family: var(--font-mono);
+}
+.palette__list .meta{ font-size: 11.5px; color: var(--ink-3) }
+.palette__list .hint{ font-family: var(--font-mono); font-size: 11px; color: var(--ink-3) }
+.palette__list .group{
+  padding: 8px 16px 4px;
+  font-size: 10px; letter-spacing: .2em;
+  color: var(--ink-3); text-transform: uppercase;
+  cursor: default;
+}
+.palette__list .group.is-active{ background: transparent }
+.palette__foot{
+  display: flex; gap: 16px; justify-content: center;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 11px;
+}
+.palette__foot kbd{ background: var(--bg-1) }
+
+/* Watch add form -------------------------------------------------- */
+.watch-add{
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 90px auto auto;
+  gap: 6px;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid var(--line-soft);
+  margin-bottom: 6px;
+}
+.watch-add[hidden]{ display: none }
+.watch-add input{
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  color: var(--ink-0);
+  font-size: 12.5px;
+  outline: none;
+  min-height: 34px;
+}
+.watch-add input:focus{ border-color: var(--gold-deep) }
+.watch li{ position: relative }
+.watch .remove{
+  position: absolute;
+  top: 50%; right: 4px;
+  transform: translateY(-50%);
+  width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--bg-2); color: var(--ink-3);
+  border: 1px solid transparent;
+  opacity: 0; transition: opacity .15s;
+  cursor: pointer;
+}
+.watch li:hover .remove,
+.watch li:focus-within .remove{ opacity: .9 }
+.watch .remove:hover{ color: var(--down); border-color: var(--line) }
+@media (hover: none){ .watch .remove{ opacity: .7 } }
+
+/* Holdings row remove -------------------------------------------- */
+.tbl td.row-actions{ width: 32px; text-align: right }
+.row-remove{
+  width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: transparent; color: var(--ink-3);
+  border: 1px solid transparent;
+  opacity: 0; transition: opacity .15s;
+  cursor: pointer;
+}
+.tbl tr:hover .row-remove{ opacity: .9 }
+.row-remove:hover{ color: var(--down); border-color: var(--line) }
+
+/* Rebalance body table ------------------------------------------- */
+.reb-table{
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.reb-table th, .reb-table td{
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: left;
+}
+.reb-table th{
+  font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 600;
+}
+.reb-table td.num, .reb-table th.num{ text-align: right; font-family: var(--font-mono) }
+.reb-table .action{
+  display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .08em;
+}
+.reb-table .action.buy  { color: var(--up);   background: var(--up-soft);   border: 1px solid rgba(76,183,135,.35) }
+.reb-table .action.sell { color: var(--down); background: var(--down-soft); border: 1px solid rgba(216,107,107,.35) }
+.reb-table .action.hold { color: var(--ink-2); background: var(--bg-1);     border: 1px solid var(--line) }
+
 /* Transaction form ----------------------------------------------- */
 .form-grid{
   display: grid;

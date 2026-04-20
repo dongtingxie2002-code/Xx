@@ -176,7 +176,12 @@
         <td class="num ${signCls(pnl)}" data-field="pnl">
           ${fmtDelta(pnl)}<br><span class="small">${fmtPct(pnlPc)}</span>
         </td>
-        <td class="num">${weight.toFixed(1)}%</td>`;
+        <td class="num">${weight.toFixed(1)}%</td>
+        <td class="row-actions">
+          <button class="row-remove" title="Remove position" aria-label="Remove ${h.sym}" data-remove="${h.sym}">
+            <svg viewBox="0 0 20 20" width="12" height="12" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15"/></svg>
+          </button>
+        </td>`;
       holdingsBody.appendChild(tr);
     });
   };
@@ -1171,11 +1176,531 @@
     renderPerf();
     renderDonut();
   });
+
+  // ── Sidebar navigation: smooth scroll + active-state tracking ────
+  const navLinks = $$('.nav__item[data-scroll]');
+  const sectionMap = Object.fromEntries(
+    navLinks.map((a) => [a.dataset.scroll, a])
+  );
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 72;
+    window.scrollTo({ top, behavior: 'smooth' });
+    history.replaceState(null, '', '#' + id);
+  };
+  navLinks.forEach((a) => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      scrollToSection(a.dataset.scroll);
+    });
+  });
+  // If the URL already has a hash, honour it on load
+  if (location.hash && document.getElementById(location.hash.slice(1))) {
+    setTimeout(() => scrollToSection(location.hash.slice(1)), 100);
+  }
+  // Active state via IntersectionObserver
+  const sections = Object.keys(sectionMap)
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
+  if ('IntersectionObserver' in window && sections.length) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          navLinks.forEach((a) => a.classList.toggle('is-active', a.dataset.scroll === id));
+        }
+      });
+    }, { rootMargin: '-20% 0px -60% 0px', threshold: 0 });
+    sections.forEach((s) => io.observe(s));
+  }
+
+  // ── Notifications popover ────────────────────────────────────────
+  const notifBtn = $('#notif-btn');
+  const notifPop = $('#notif-popover');
+  const notifList = $('#notif-list');
+  const notifBadge = $('#notif-badge');
+  const NOTIF_KEY = 'av-notif-read-v1';
+  const readNotifs = new Set(storageGet(NOTIF_KEY, []));
+
+  const buildNotifications = () => {
+    const out = [];
+    const totalMV = holdings.reduce((s, h) => s + h.qty * h.px, 0);
+    const aum = totalMV + 191_000_000;
+    // Concentration breaches
+    holdings.forEach((h) => {
+      const limit = concentrationLimits[h.sym];
+      if (!limit) return;
+      const wt = h.qty * h.px / aum * 100;
+      if (wt > limit) {
+        out.push({
+          id: 'conc-' + h.sym,
+          tone: 'down',
+          title: `${h.sym} concentration ${wt.toFixed(1)}% exceeds ${limit}% limit`,
+          meta: 'Risk policy · single-name cap',
+          time: 'Now',
+        });
+      }
+    });
+    // Upcoming capital calls
+    events.filter((e) => e.cls === 'call').slice(0, 2).forEach((e) => {
+      out.push({
+        id: 'ev-' + e.d + e.m,
+        tone: '',
+        title: e.label,
+        meta: e.meta,
+        time: `${e.d} ${e.m}`,
+      });
+    });
+    // Allocation drift > 2pp
+    allocation.forEach((a) => {
+      const drift = a.current - a.target;
+      if (Math.abs(drift) > 2) {
+        out.push({
+          id: 'drift-' + a.name,
+          tone: drift > 0 ? 'up' : 'down',
+          title: `${a.name} is ${drift > 0 ? '+' : ''}${drift}pp vs target`,
+          meta: `Current ${a.current}% · Target ${a.target}%`,
+          time: 'Today',
+        });
+      }
+    });
+    return out;
+  };
+  const renderNotifs = () => {
+    const items = buildNotifications();
+    const unread = items.filter((i) => !readNotifs.has(i.id)).length;
+    notifBadge.textContent = unread;
+    notifBadge.style.display = unread ? '' : 'none';
+    if (!items.length) {
+      notifList.innerHTML = `<li class="empty">All clear · no open alerts</li>`;
+      return;
+    }
+    notifList.innerHTML = items.map((i) => `
+      <li data-id="${i.id}" class="${readNotifs.has(i.id) ? 'read' : ''}">
+        <span class="pin ${i.tone}"></span>
+        <div><strong>${i.title}</strong><span class="muted">${i.meta}</span></div>
+        <span class="time">${i.time}</span>
+      </li>`).join('');
+  };
+  const toggleNotif = (open) => {
+    const next = open ?? notifPop.hidden;
+    notifPop.hidden = !next;
+    notifBtn.setAttribute('aria-expanded', next ? 'true' : 'false');
+    document.body.classList.toggle('notif-open', next);
+    if (next) renderNotifs();
+  };
+  notifBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleNotif();
+  });
+  document.addEventListener('click', (e) => {
+    if (!notifPop || notifPop.hidden) return;
+    if (!notifPop.contains(e.target) && e.target !== notifBtn) toggleNotif(false);
+  });
+  $('#notif-clear')?.addEventListener('click', () => {
+    buildNotifications().forEach((i) => readNotifs.add(i.id));
+    storageSet(NOTIF_KEY, Array.from(readNotifs));
+    renderNotifs();
+  });
+  notifList?.addEventListener('click', (e) => {
+    const li = e.target.closest('li[data-id]');
+    if (!li) return;
+    readNotifs.add(li.dataset.id);
+    storageSet(NOTIF_KEY, Array.from(readNotifs));
+    renderNotifs();
+  });
+
+  // ── Command palette (⌘K / Ctrl+K) ────────────────────────────────
+  const cmdModal = $('#cmd-modal');
+  const cmdInput = $('#cmd-input');
+  const cmdList  = $('#cmd-list');
+  let cmdActiveIdx = 0;
+  let cmdResults = [];
+
+  const baseCommands = () => {
+    const out = [];
+    // Sections
+    [
+      ['overview', 'Go to Overview', 'Section'],
+      ['performance', 'Go to Performance', 'Section'],
+      ['allocation', 'Go to Allocation', 'Section'],
+      ['holdings-section', 'Go to Holdings', 'Section'],
+      ['watchlist-card', 'Go to Watchlist', 'Section'],
+      ['exposure', 'Go to Exposure', 'Section'],
+      ['risk', 'Go to Risk & Analytics', 'Section'],
+      ['events', 'Go to Events', 'Section'],
+      ['private-markets', 'Go to Private Markets', 'Section'],
+      ['cash', 'Go to Cash & FX', 'Section'],
+      ['activity', 'Go to Activity', 'Section'],
+    ].forEach(([id, label, group]) => out.push({ kind: 'scroll', target: id, label, group, k: id.slice(0, 2).toUpperCase() }));
+    // Actions
+    out.push({ kind: 'action', label: 'New transaction',            group: 'Action', k: '+',  act: () => openTxModal(null) });
+    out.push({ kind: 'action', label: 'Add position',               group: 'Action', k: '+',  act: () => openPosModal() });
+    out.push({ kind: 'action', label: 'Bulk update prices',         group: 'Action', k: '¶',  act: () => $('#bulk-edit').click() });
+    out.push({ kind: 'action', label: 'Reset manual prices',        group: 'Action', k: '↺',  act: () => $('#reset-prices').click() });
+    out.push({ kind: 'action', label: 'Pause / resume live ticks',  group: 'Action', k: '⏸',  act: () => setPaused(!paused) });
+    out.push({ kind: 'action', label: 'Rebalance proposal',         group: 'Action', k: '⇄',  act: () => openRebalance() });
+    out.push({ kind: 'action', label: 'Export statement (CSV)',     group: 'Action', k: '↓',  act: () => exportStatementCSV() });
+    out.push({ kind: 'action', label: 'Export transactions (JSON)', group: 'Action', k: '↓',  act: () => $('#tx-export').click() });
+    out.push({ kind: 'action', label: 'Import transactions (JSON)', group: 'Action', k: '↑',  act: () => $('#tx-import').click() });
+    out.push({ kind: 'action', label: 'Toggle day / night theme',   group: 'Action', k: '☼',  act: () => themeBtn.click() });
+    // Holdings
+    holdings.forEach((h) => out.push({
+      kind: 'holding', sym: h.sym, label: `${h.sym} · ${h.name}`, group: 'Holding', k: h.sym.slice(0, 2),
+      meta: `Qty ${fmtNum(h.qty, 0)} · last ${fmtNum(h.px, 2)}`,
+      act: () => {
+        scrollToSection('holdings-section');
+        setTimeout(() => {
+          const tr = holdingsBody.querySelector(`tr[data-sym="${h.sym}"]`);
+          if (!tr) return;
+          tr.classList.add('flash-up');
+          setTimeout(() => tr.classList.remove('flash-up'), 900);
+          tr.querySelector('[data-field="px"]')?.scrollIntoView({ block: 'center' });
+        }, 350);
+      },
+    }));
+    // Watchlist
+    watchlist.forEach((w) => out.push({
+      kind: 'watch', sym: w.sym, label: `${w.sym} · ${w.name}`, group: 'Watchlist', k: w.sym.slice(0, 2),
+      meta: `Last ${fmtNum(w.px, 2)}`,
+      act: () => scrollToSection('watchlist-card'),
+    }));
+    return out;
+  };
+
+  const filterCommands = (q) => {
+    const needle = q.trim().toLowerCase();
+    const all = baseCommands();
+    if (!needle) return all.slice(0, 30);
+    const scored = [];
+    all.forEach((c) => {
+      const hay = (c.label + ' ' + (c.sym || '') + ' ' + c.group).toLowerCase();
+      const idx = hay.indexOf(needle);
+      if (idx >= 0) scored.push({ c, score: idx });
+    });
+    scored.sort((a, b) => a.score - b.score);
+    return scored.map((s) => s.c).slice(0, 50);
+  };
+
+  const renderCmd = () => {
+    cmdResults = filterCommands(cmdInput.value);
+    if (!cmdResults.length) {
+      cmdList.innerHTML = `<li class="group">No matches</li>`;
+      return;
+    }
+    // Group-by insertion order, with separators
+    const html = [];
+    let lastGroup = '';
+    cmdResults.forEach((c, i) => {
+      if (c.group !== lastGroup) {
+        html.push(`<li class="group">${c.group}</li>`);
+        lastGroup = c.group;
+      }
+      html.push(`
+        <li data-idx="${i}" class="${i === cmdActiveIdx ? 'is-active' : ''}">
+          <span class="k">${c.k || '·'}</span>
+          <div><strong>${c.label}</strong>${c.meta ? `<div class="meta">${c.meta}</div>` : ''}</div>
+          <span class="hint">↵</span>
+        </li>`);
+    });
+    cmdList.innerHTML = html.join('');
+  };
+
+  const runCmd = (c) => {
+    if (!c) return;
+    if (c.kind === 'scroll') scrollToSection(c.target);
+    else if (c.act) c.act();
+    closeCmd();
+  };
+  const openCmd = () => {
+    cmdModal.hidden = false;
+    cmdInput.value = '';
+    cmdActiveIdx = 0;
+    renderCmd();
+    setTimeout(() => cmdInput.focus(), 30);
+  };
+  const closeCmd = () => { cmdModal.hidden = true };
+
+  cmdInput?.addEventListener('input', () => { cmdActiveIdx = 0; renderCmd(); });
+  cmdInput?.addEventListener('keydown', (e) => {
+    const visible = cmdResults.length;
+    if (e.key === 'ArrowDown') { e.preventDefault(); cmdActiveIdx = Math.min(visible - 1, cmdActiveIdx + 1); renderCmd(); }
+    else if (e.key === 'ArrowUp')   { e.preventDefault(); cmdActiveIdx = Math.max(0, cmdActiveIdx - 1); renderCmd(); }
+    else if (e.key === 'Enter')     { e.preventDefault(); runCmd(cmdResults[cmdActiveIdx]); }
+    else if (e.key === 'Escape')    { e.preventDefault(); closeCmd(); }
+  });
+  cmdList?.addEventListener('click', (e) => {
+    const li = e.target.closest('li[data-idx]');
+    if (!li) return;
+    runCmd(cmdResults[+li.dataset.idx]);
+  });
+  cmdModal?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', closeCmd));
+  $('#nav-search')?.addEventListener('click', (e) => { e.preventDefault(); openCmd(); });
+  $('#nav-advisor')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const adv = document.querySelector('.card--advisor');
+    if (adv) {
+      adv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      adv.animate([{ boxShadow: '0 0 0 3px rgba(200,168,107,.6)' }, { boxShadow: '0 0 0 0 rgba(200,168,107,0)' }], { duration: 1100 });
+    }
+  });
+  // Advisor inline buttons
+  $$('.card--advisor .btn').forEach((b) => b.addEventListener('click', () => {
+    alert('A secure message has been queued for Eleanor Marchetti. She typically responds within 2 hours.');
+  }));
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    const target = e.target;
+    const inForm = target && /INPUT|TEXTAREA|SELECT/.test(target.tagName) && !target.closest('#cmd-modal');
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      if (cmdModal.hidden) openCmd(); else closeCmd();
+      return;
+    }
+    if (inForm) return;
+    if ((e.metaKey || e.ctrlKey) && (e.key === '1' || e.key === '2' || e.key === '3')) {
+      e.preventDefault();
+      const map = { '1': 'overview', '2': 'holdings-section', '3': 'performance' };
+      scrollToSection(map[e.key]);
+    }
+  });
+
+  // ── Watchlist CRUD ───────────────────────────────────────────────
+  const WATCH_KEY = 'av-watchlist-v1';
+  const savedWatch = storageGet(WATCH_KEY, null);
+  if (Array.isArray(savedWatch) && savedWatch.length) {
+    watchlist.length = 0;
+    savedWatch.forEach((w) => watchlist.push(w));
+  }
+  const persistWatch = () => storageSet(WATCH_KEY, watchlist);
+  const wrapRender = () => { renderWatch(); bindWatchRemove(); };
+  const bindWatchRemove = () => {
+    $$('#watchlist li').forEach((li) => {
+      if (li.querySelector('.remove')) return;
+      const btn = document.createElement('button');
+      btn.className = 'remove';
+      btn.innerHTML = `<svg viewBox="0 0 20 20" width="12" height="12" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round"><path d="M5 5l10 10M15 5 5 15"/></svg>`;
+      btn.title = 'Remove from watchlist';
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const sym = li.dataset.sym;
+        const i = watchlist.findIndex((w) => w.sym === sym);
+        if (i >= 0) watchlist.splice(i, 1);
+        persistWatch();
+        wrapRender();
+      });
+      li.appendChild(btn);
+    });
+  };
+  // Re-run the binding whenever the list is rendered
+  const origRenderWatch = renderWatch;
+  // (shadow — use a wrapper to keep behaviour but bind removes)
+  const wForm = $('#watch-add-form');
+  $('#watch-add')?.addEventListener('click', () => {
+    wForm.hidden = !wForm.hidden;
+    if (!wForm.hidden) setTimeout(() => $('#watch-sym').focus(), 40);
+  });
+  $('#watch-cancel')?.addEventListener('click', () => {
+    wForm.hidden = true; wForm.reset();
+  });
+  wForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const sym = ($('#watch-sym').value || '').trim().toUpperCase();
+    const name = ($('#watch-name').value || '').trim() || sym;
+    const px = parseFloat($('#watch-px').value);
+    if (!sym || !Number.isFinite(px) || px <= 0) return;
+    if (watchlist.some((w) => w.sym === sym)) return;
+    watchlist.push({ sym, name, px, pct: 0 });
+    watchAnchors.set(sym, px);
+    persistWatch();
+    wrapRender();
+    wForm.hidden = true; wForm.reset();
+  });
+  // Initial bind
+  bindWatchRemove();
+
+  // ── Positions CRUD ───────────────────────────────────────────────
+  const posModal = $('#pos-modal');
+  const posForm  = $('#pos-form');
+  const openPosModal = () => {
+    posForm.reset();
+    $('#pos-beta').value = 1;
+    $('#pos-dur').value = 0;
+    $('#pos-fx').value = 0;
+    $('#pos-gold').value = 0;
+    posModal.hidden = false;
+    setTimeout(() => $('#pos-sym').focus(), 50);
+  };
+  const closePosModal = () => { posModal.hidden = true };
+  posModal?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', closePosModal));
+  $('#add-position')?.addEventListener('click', openPosModal);
+
+  posForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const sym = $('#pos-sym').value.trim().toUpperCase();
+    if (!sym) return;
+    if (holdings.some((h) => h.sym === sym)) { alert(`${sym} is already in the book.`); return; }
+    const pos = {
+      sym,
+      name:   $('#pos-name').value.trim()   || sym,
+      sector: $('#pos-sector').value.trim() || 'Custom',
+      qty:    parseFloat($('#pos-qty').value)   || 0,
+      cost:   parseFloat($('#pos-cost').value)  || 0,
+      px:     parseFloat($('#pos-px').value)    || 0,
+      beta:   parseFloat($('#pos-beta').value)  || 0,
+      dur:    parseFloat($('#pos-dur').value)   || 0,
+      fx:     parseFloat($('#pos-fx').value)    || 0,
+      gold:   parseFloat($('#pos-gold').value)  || 0,
+    };
+    holdings.push(pos);
+    anchors.set(sym, pos.px);
+    dayOpen.set(sym, pos.px);
+    seedPx.set(sym, pos.px);
+    renderHoldings();
+    bindRowRemove();
+    applyRowTags();
+    recomputeAnalytics();
+    liveTick();
+    closePosModal();
+  });
+
+  const bindRowRemove = () => {
+    $$('#holdings tbody .row-remove').forEach((btn) => {
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const sym = btn.dataset.remove;
+        if (!confirm(`Remove ${sym} from the book?`)) return;
+        const i = holdings.findIndex((h) => h.sym === sym);
+        if (i >= 0) holdings.splice(i, 1);
+        anchors.delete(sym); dayOpen.delete(sym); seedPx.delete(sym);
+        renderHoldings();
+        bindRowRemove();
+        applyRowTags();
+        recomputeAnalytics();
+        liveTick();
+      });
+    });
+  };
+
+  // ── Export statement (CSV) ──────────────────────────────────────
+  const exportStatementCSV = () => {
+    const totalMV = holdings.reduce((s, h) => s + h.qty * h.px, 0);
+    const headers = ['Symbol','Instrument','Sector','Quantity','Cost','Last','Market Value','Unrealised P&L','% Port'];
+    const rows = holdings.map((h) => {
+      const mv = h.qty * h.px;
+      const pnl = (h.px - h.cost) * h.qty;
+      const wt = mv / totalMV * 100;
+      return [h.sym, h.name, h.sector, h.qty, h.cost.toFixed(4), h.px.toFixed(4), mv.toFixed(2), pnl.toFixed(2), wt.toFixed(2) + '%'];
+    });
+    const csv = [headers, ...rows]
+      .map((r) => r.map((v) => {
+        const s = String(v);
+        return s.includes(',') || s.includes('"') ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `av-statement-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 200);
+  };
+  $('#export-statement')?.addEventListener('click', exportStatementCSV);
+
+  // ── Rebalance proposal ──────────────────────────────────────────
+  const openRebalance = () => {
+    const totalMV = holdings.reduce((s, h) => s + h.qty * h.px, 0);
+    const aum = totalMV + 191_000_000;
+    const rows = allocation.map((a) => {
+      const drift = a.current - a.target;
+      const shift = -drift / 100 * aum;
+      return { name: a.name, current: a.current, target: a.target, drift, shift };
+    });
+    const body = $('#reb-body');
+    body.innerHTML = `
+      <p class="muted" style="margin:0 0 10px">Proposed trades to return to strategic weights on <strong>${fmtUSD(aum, 0)}</strong> of AUM.</p>
+      <table class="reb-table">
+        <thead><tr>
+          <th>Asset class</th>
+          <th class="num">Current</th>
+          <th class="num">Target</th>
+          <th class="num">Drift</th>
+          <th class="num">Trade</th>
+          <th>Action</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map((r) => {
+            const act = Math.abs(r.drift) < 0.5 ? 'hold' : (r.drift > 0 ? 'sell' : 'buy');
+            const actLabel = act === 'hold' ? 'HOLD' : (act === 'buy' ? 'BUY' : 'SELL');
+            return `<tr>
+              <td>${r.name}</td>
+              <td class="num">${r.current}%</td>
+              <td class="num">${r.target}%</td>
+              <td class="num ${r.drift > 0 ? 'up' : r.drift < 0 ? 'down' : 'muted'}">${r.drift >= 0 ? '+' : ''}${r.drift}pp</td>
+              <td class="num">${r.shift === 0 ? '—' : (r.shift > 0 ? '+' : '−') + fmtUSD(Math.abs(r.shift), 0)}</td>
+              <td><span class="action ${act}">${actLabel}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+    $('#reb-modal').hidden = false;
+  };
+  $('#rebalance-btn')?.addEventListener('click', openRebalance);
+  $('#drift-alerts')?.addEventListener('click', openRebalance);
+  $('#reb-modal')?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => $('#reb-modal').hidden = true));
+  $('#reb-send')?.addEventListener('click', () => {
+    $('#reb-modal').hidden = true;
+    alert('Proposal sent to Eleanor Marchetti. You will receive confirmation from the desk.');
+  });
+
+  // ── Calendar / .ics download ────────────────────────────────────
+  $('#calendar-download')?.addEventListener('click', () => {
+    const pad = (n) => String(n).padStart(2, '0');
+    const year = 2026;
+    const monthNum = { 'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12 };
+    const stamp = new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z';
+    const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Ashford & Vere//EN'];
+    events.forEach((e, i) => {
+      const m = monthNum[e.m];
+      const dt = `${year}${pad(m)}${pad(e.d)}`;
+      const dtEnd = `${year}${pad(m)}${pad(e.d + 1)}`;
+      lines.push(
+        'BEGIN:VEVENT',
+        `UID:ev-${i}@ashford-vere`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART;VALUE=DATE:${dt}`,
+        `DTEND;VALUE=DATE:${dtEnd}`,
+        `SUMMARY:${e.label}`,
+        `DESCRIPTION:${(e.meta || '').replace(/\n/g, ' ')}`,
+        'END:VEVENT'
+      );
+    });
+    lines.push('END:VCALENDAR');
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'av-events.ics';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 200);
+  });
+
   // Run one tick immediately so % figures align with live state
   renderFeed();
   recomputeAnalytics();
   liveTick();
-  setInterval(liveTick, 1600);
+  bindRowRemove();
+  renderNotifs();
+  setInterval(() => {
+    liveTick();
+    bindRowRemove();
+    if (!notifPop.hidden) renderNotifs();
+  }, 1600);
 
   // Re-render perf chart on resize (keeps end-marker aligned)
   let r;
