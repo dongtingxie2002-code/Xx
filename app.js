@@ -149,10 +149,22 @@
 
   // ── Holdings table ────────────────────────────────────────────────
   const holdingsBody = $('#holdings tbody');
+  let holdingsQuery = '';
+  let holdingsView  = 'table';
+  const matchesHoldingQuery = (h) => {
+    const q = holdingsQuery.trim().toLowerCase();
+    if (!q) return true;
+    return [h.sym, h.name, h.sector].some((v) => (v || '').toLowerCase().includes(q));
+  };
   const renderHoldings = () => {
     const totalMV = holdings.reduce((s, h) => s + h.qty * h.px, 0);
     holdingsBody.innerHTML = '';
-    holdings.forEach((h) => {
+    const visible = holdings.filter(matchesHoldingQuery);
+    const countEl = $('#holdings-count');
+    if (countEl) countEl.textContent = visible.length === holdings.length
+      ? `${holdings.length} positions`
+      : `${visible.length} of ${holdings.length}`;
+    visible.forEach((h) => {
       const mv    = h.qty * h.px;
       const pnl   = (h.px - h.cost) * h.qty;
       const pnlPc = ((h.px / h.cost) - 1) * 100;
@@ -1424,6 +1436,8 @@
     out.push({ kind: 'action', label: 'Add private-market holding', group: 'Action', k: '+',  act: () => $('#pm-add').click() });
     out.push({ kind: 'action', label: 'Add cash account',           group: 'Action', k: '+',  act: () => $('#cash-add').click() });
     out.push({ kind: 'action', label: 'Keyboard shortcuts',         group: 'Action', k: '?',  act: () => { $('#help-modal').hidden = false; } });
+    out.push({ kind: 'action', label: 'Print statement',            group: 'Action', k: '🖨', act: () => window.print() });
+    out.push({ kind: 'action', label: 'Toggle heatmap view',        group: 'Action', k: '▦', act: () => setHoldingsView(holdingsView === 'heat' ? 'table' : 'heat') });
     // Holdings
     holdings.forEach((h) => out.push({
       kind: 'holding', sym: h.sym, label: `${h.sym} · ${h.name}`, group: 'Holding', k: h.sym.slice(0, 2),
@@ -1550,6 +1564,74 @@
       e.preventDefault();
       helpModal.hidden = !helpModal.hidden;
     }
+  });
+
+  // ── Heatmap view ────────────────────────────────────────────────
+  const heatEl = $('#heatmap');
+  const wrapEl = $('#holdings-wrap');
+  const renderHeatmap = () => {
+    if (!heatEl) return;
+    const totalMV = holdings.reduce((s, h) => s + h.qty * h.px, 0);
+    const visible = holdings.filter(matchesHoldingQuery);
+    const pcts = visible.map((h) => (h.px - h.cost) / h.cost * 100);
+    const maxAbs = Math.max(5, ...pcts.map(Math.abs));
+    heatEl.innerHTML = visible.map((h) => {
+      const mv = h.qty * h.px;
+      const weight = (mv / totalMV) * 100;
+      const pct = (h.px - h.cost) / h.cost * 100;
+      const intensity = Math.min(1, Math.abs(pct) / maxAbs);
+      // Blend between neutral and up/down colour
+      const base = pct >= 0 ? [76, 183, 135] : [216, 107, 107];
+      const neutral = [70, 74, 82];
+      const mix = base.map((c, i) => Math.round(neutral[i] + (c - neutral[i]) * (0.35 + 0.55 * intensity)));
+      const bg = `rgb(${mix.join(',')})`;
+      const size = Math.max(0.7, Math.min(2, weight / 6));
+      return `
+        <div class="heat-tile" data-sym="${h.sym}" style="background:${bg};grid-column:span ${Math.round(size)};grid-row:span ${size > 1.4 ? 2 : 1}">
+          <button class="rm" data-remove="${h.sym}" aria-label="Remove ${h.sym}">
+            <svg viewBox="0 0 20 20" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M5 5l10 10M15 5 5 15"/></svg>
+          </button>
+          <div class="sym">${h.sym}</div>
+          <div class="name">${h.name}</div>
+          <div class="pct">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</div>
+          <div class="mv">${weight.toFixed(1)}%</div>
+        </div>`;
+    }).join('');
+  };
+  const setHoldingsView = (view) => {
+    holdingsView = view;
+    $$('.view-toggle button').forEach((b) => b.classList.toggle('is-active', b.dataset.view === view));
+    wrapEl.hidden = view === 'heat';
+    heatEl.hidden = view !== 'heat';
+    if (view === 'heat') renderHeatmap();
+  };
+  $$('.view-toggle button').forEach((b) => b.addEventListener('click', () => setHoldingsView(b.dataset.view)));
+
+  $('#holdings-q')?.addEventListener('input', (e) => {
+    holdingsQuery = e.target.value;
+    renderHoldings();
+    if (holdingsView === 'heat') renderHeatmap();
+    bindRowRemove();
+    applyRowTags();
+  });
+
+  heatEl?.addEventListener('click', (e) => {
+    const rm = e.target.closest('.rm');
+    if (rm) {
+      e.stopPropagation();
+      const sym = rm.dataset.remove;
+      if (!confirm(`Remove ${sym} from the book?`)) return;
+      const i = holdings.findIndex((h) => h.sym === sym);
+      if (i >= 0) holdings.splice(i, 1);
+      anchors.delete(sym); dayOpen.delete(sym); seedPx.delete(sym);
+      renderHoldings(); renderHeatmap(); bindRowRemove(); recomputeAnalytics(); liveTick();
+      return;
+    }
+    const tile = e.target.closest('.heat-tile[data-sym]');
+    if (!tile) return;
+    const h = holdings.find((x) => x.sym === tile.dataset.sym);
+    if (!h) return;
+    prefillTxModal({ symbol: h.sym, price: h.px, type: 'BUY' });
   });
 
   // ── Click-to-trade: watchlist and holdings row → pre-filled TX ────
@@ -1898,8 +1980,21 @@
     setTimeout(() => URL.revokeObjectURL(url), 200);
   };
   $('#export-statement')?.addEventListener('click', exportStatementCSV);
+  $('#print-statement')?.addEventListener('click', () => window.print());
 
   // ── Rebalance proposal ──────────────────────────────────────────
+  // Map each allocation bucket to a representative holding for quick
+  // trade tickets. This is approximate — a rebalance desk would split
+  // across many instruments — but it gives the user a sensible start.
+  const bucketProxy = {
+    'Public Equities':    'BRK.B',
+    'Fixed Income':       'UST10',
+    'Private Markets':    null,
+    'Hedge Funds':        null,
+    'Real Assets':        'GOLD',
+    'Cash & Equivalents': null,
+  };
+
   const openRebalance = () => {
     const totalMV = holdings.reduce((s, h) => s + h.qty * h.px, 0);
     const aum = totalMV + 191_000_000;
@@ -1919,11 +2014,14 @@
           <th class="num">Drift</th>
           <th class="num">Trade</th>
           <th>Action</th>
+          <th></th>
         </tr></thead>
         <tbody>
           ${rows.map((r) => {
             const act = Math.abs(r.drift) < 0.5 ? 'hold' : (r.drift > 0 ? 'sell' : 'buy');
             const actLabel = act === 'hold' ? 'HOLD' : (act === 'buy' ? 'BUY' : 'SELL');
+            const proxy = bucketProxy[r.name];
+            const canTrade = proxy && act !== 'hold';
             return `<tr>
               <td>${r.name}</td>
               <td class="num">${r.current}%</td>
@@ -1931,12 +2029,27 @@
               <td class="num ${r.drift > 0 ? 'up' : r.drift < 0 ? 'down' : 'muted'}">${r.drift >= 0 ? '+' : ''}${r.drift}pp</td>
               <td class="num">${r.shift === 0 ? '—' : (r.shift > 0 ? '+' : '−') + fmtUSD(Math.abs(r.shift), 0)}</td>
               <td><span class="action ${act}">${actLabel}</span></td>
+              <td class="num">${canTrade ? `<button class="btn btn--ghost btn--sm" data-reb-trade="${proxy}" data-reb-type="${act.toUpperCase()}" data-reb-shift="${Math.abs(r.shift)}">Ticket →</button>` : ''}</td>
             </tr>`;
           }).join('')}
         </tbody>
       </table>`;
     $('#reb-modal').hidden = false;
   };
+  $('#reb-body')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-reb-trade]');
+    if (!btn) return;
+    const sym = btn.dataset.rebTrade;
+    const type = btn.dataset.rebType;
+    const shift = +btn.dataset.rebShift;
+    const h = holdings.find((x) => x.sym === sym);
+    if (!h) return;
+    // Convert dollar shift into a rough share count based on live price
+    const qty = Math.max(1, Math.round(shift / h.px));
+    $('#reb-modal').hidden = true;
+    setTimeout(() => prefillTxModal({ symbol: sym, price: h.px, type }), 200);
+    setTimeout(() => { $('#tx-qty').value = qty; $('#tx-qty').dispatchEvent(new Event('input')); }, 280);
+  });
   $('#rebalance-btn')?.addEventListener('click', openRebalance);
   $('#drift-alerts')?.addEventListener('click', openRebalance);
   $('#reb-modal')?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => $('#reb-modal').hidden = true));
@@ -2065,12 +2178,23 @@
   const tickStep = () => {
     liveTick();
     bindRowRemove();
+    if (holdingsView === 'heat') renderHeatmap();
     if (notifPop && !notifPop.hidden) renderNotifs();
   };
   tickTimer = prefs.tick > 0 ? setInterval(tickStep, prefs.tick) : null;
 
   // Apply any saved preferences at the end so first render is stable
   applyPrefs();
+
+  // ── Service Worker (offline app shell) ──────────────────────────
+  // Only register over http(s): file:// origins reject service workers.
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {
+        // Non-fatal: the dashboard still works without offline support.
+      });
+    });
+  }
 
   // Re-render perf chart on resize (keeps end-marker aligned)
   let r;

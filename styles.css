@@ -701,6 +701,85 @@ body[data-theme="night"] .theme-toggle .ico-sun{ display: none }
   background: var(--line); border-radius: 8px;
 }
 
+/* Holdings filter / view toggle ---------------------------------- */
+.holdings-filter{
+  display: flex; gap: 12px; align-items: center;
+  padding: 6px 0 10px;
+}
+.holdings-filter .feed-search{ flex: 1; min-width: 0 }
+.holdings-filter .small{ white-space: nowrap }
+
+.view-toggle{
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-1);
+}
+.view-toggle button{
+  padding: 6px 10px;
+  color: var(--ink-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; min-height: 28px;
+}
+.view-toggle button.is-active{ background: var(--bg-3); color: var(--ink-0) }
+
+/* Heatmap -------------------------------------------------------- */
+.heatmap{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  padding-top: 4px;
+}
+.heatmap[hidden]{ display: none }
+.heat-tile{
+  position: relative;
+  border-radius: 10px;
+  padding: 12px 12px 14px;
+  color: #1b1510;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,.15);
+  overflow: hidden;
+  transition: transform .12s ease;
+  min-height: 86px;
+}
+.heat-tile:hover{ transform: translateY(-1px) }
+.heat-tile .sym{
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: -.005em;
+}
+.heat-tile .name{
+  font-size: 10px;
+  opacity: .8;
+  margin: 2px 0 6px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.heat-tile .pct{
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  letter-spacing: -.01em;
+}
+.heat-tile .mv{
+  position: absolute;
+  bottom: 8px; right: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  opacity: .65;
+}
+.heat-tile .rm{
+  position: absolute; top: 6px; right: 6px;
+  width: 18px; height: 18px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgba(0,0,0,.08); color: rgba(0,0,0,.55);
+  border: 0;
+  opacity: 0; transition: opacity .15s;
+}
+.heat-tile:hover .rm{ opacity: 1 }
+
 /* Holdings actions / editing ------------------------------------- */
 .holdings-actions{ display: inline-flex; gap: 6px }
 .holdings-actions .btn{ display: inline-flex; align-items: center; gap: 6px }
@@ -1317,4 +1396,50 @@ body[data-theme="day"] .watch .sym{ background: #efe6d1; color: var(--gold-deep)
   .tbl td[data-field="px"]:hover{ background: transparent }
   .feed li:hover{ background: transparent }
   .nav__item:hover{ background: transparent }
+}
+
+/* Print styles --------------------------------------------------- */
+@media print{
+  :root,
+  body[data-theme="day"],
+  body[data-theme="night"]{
+    --bg-0: #ffffff;
+    --bg-1: #ffffff;
+    --bg-2: #ffffff;
+    --bg-3: #f5f1e8;
+    --line: #c9c1ad;
+    --line-soft: #e2dcc8;
+    --ink-0: #111418;
+    --ink-1: #2a2f3b;
+    --ink-2: #55504a;
+    --ink-3: #7a7468;
+    --gold: #8a6b30;
+    --gold-soft: #9a7b3f;
+    --gold-deep: #6a4e1d;
+    --up: #20744a;
+    --down: #9c2a2a;
+    --shadow: none;
+  }
+  body{ background: #fff !important; color: var(--ink-0) }
+  .app{ grid-template-columns: 1fr }
+  .sidebar, .topbar, .hero__actions, .segmented, .tabs,
+  .holdings-actions, .holdings-filter, .feed-filters,
+  .popover, #notif-btn, .theme-toggle, #prefs-btn,
+  .row-remove, .row-actions, .watch .remove,
+  .view-toggle, .modal, .hero .muted,
+  #bulk-modal, #tx-modal, #pos-modal, #reb-modal,
+  #pm-modal, #cash-modal, #prefs-modal, #cmd-modal, #help-modal{
+    display: none !important;
+  }
+  .main{ padding: 0; grid-column: 1; max-width: none }
+  .card{
+    box-shadow: none !important;
+    border: 1px solid var(--line) !important;
+    page-break-inside: avoid;
+  }
+  .display{ font-size: 26px }
+  .chart{ height: 220px }
+  .tbl, .alloc, .bars, .cash, .pm, .events, .feed{ font-size: 11.5px }
+  a{ color: inherit; text-decoration: none }
+  .legal{ break-before: page }
 }

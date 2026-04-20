@@ -163,7 +163,8 @@
         </div>
         <div class="hero__actions">
           <button id="rebalance-btn" class="btn btn--gold">Rebalance proposal</button>
-          <button id="export-statement" class="btn btn--ghost">Export statement</button>
+          <button id="export-statement" class="btn btn--ghost">Export CSV</button>
+          <button id="print-statement" class="btn btn--ghost">Print / PDF</button>
         </div>
       </section>
 
@@ -288,6 +289,14 @@
               <span class="muted">Double‑click any price to override · <kbd class="kbd">⏎</kbd> to commit · <kbd class="kbd">Esc</kbd> to cancel</span>
             </div>
             <div class="holdings-actions">
+              <div class="view-toggle" role="tablist" aria-label="Holdings view">
+                <button data-view="table" class="is-active" aria-label="Table view" title="Table">
+                  <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 10h18M3 16h18M9 4v16"/></svg>
+                </button>
+                <button data-view="heat" aria-label="Heatmap view" title="Heatmap">
+                  <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="1.6" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+                </button>
+              </div>
               <button id="pause-ticks" class="btn btn--ghost btn--sm" title="Pause / resume live ticks">
                 <svg class="ico-pause" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
                 <svg class="ico-play"  viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M7 5v14l12-7Z"/></svg>
@@ -302,7 +311,17 @@
             </div>
           </header>
 
-          <div class="table-wrap">
+          <div class="holdings-filter">
+            <div class="feed-search">
+              <svg viewBox="0 0 20 20" width="12" height="12" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="m13.5 13.5 4 4"/></svg>
+              <input id="holdings-q" type="search" placeholder="Filter holdings by symbol, name or sector…" autocomplete="off" />
+            </div>
+            <span class="muted small" id="holdings-count"></span>
+          </div>
+
+          <div class="heatmap" id="heatmap" hidden></div>
+
+          <div class="table-wrap" id="holdings-wrap">
             <table class="tbl" id="holdings">
               <thead>
                 <tr>
