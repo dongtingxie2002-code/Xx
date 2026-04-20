@@ -1129,31 +1129,61 @@
   const closeTxModal = () => { txModal.hidden = true };
 
   $('#tx-new')?.addEventListener('click', () => openTxModal(null));
+  $('#hero-tx-new')?.addEventListener('click', () => openTxModal(null));
   txModal?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', closeTxModal));
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && txModal && !txModal.hidden) closeTxModal();
   });
 
-  // Apply a transaction's effect to the positions book.
-  // For un-booked symbols (e.g. META, TSM) we only record the transaction —
-  // we don't silently create a new holding row unless it's a BUY on a known
-  // symbol, which keeps the book consistent.
+  // Apply a transaction's effect to the positions book. A BUY on a
+  // symbol that isn't in the book creates it so P&L, allocation, VaR,
+  // concentration and stress scenarios all pick it up automatically.
+  // SELL only reduces qty on existing positions.
   const applyToBook = (t) => {
-    const h = holdings.find((x) => x.sym === t.symbol);
-    if (!h) return;
     const qty = +t.qty || 0;
     const px  = +t.price || 0;
     const fee = +t.fee || 0;
+    let h = holdings.find((x) => x.sym === t.symbol);
+
+    if (!h && t.type === 'BUY' && qty > 0 && px > 0) {
+      h = {
+        sym: t.symbol,
+        name: t.symbol,
+        sector: 'Custom',
+        qty: 0, cost: px, px,
+        beta: 1, dur: 0, fx: 0, gold: 0,
+      };
+      holdings.push(h);
+      anchors.set(h.sym, h.px);
+      dayOpen.set(h.sym, h.px);
+      seedPx.set(h.sym, h.px);
+    }
+    if (!h) return;
+
     if (t.type === 'BUY' && qty > 0) {
       const oldNotional = h.qty * h.cost;
       const newNotional = oldNotional + qty * px + fee;
       h.qty  = h.qty + qty;
       h.cost = h.qty > 0 ? newNotional / h.qty : h.cost;
+      // Mark the live price to the most recent fill so P&L is honest
+      h.px = px;
     } else if (t.type === 'SELL' && qty > 0) {
       h.qty = Math.max(0, h.qty - qty);
+      h.px = px;
     }
-    // Dividends, coupons, capital calls don't change qty/cost here;
-    // they'd flow through the cash ledger in a real system.
+    // DIV / CPN / CALL / FX / TRF flow through cash in a real system;
+    // here they stay on the transaction ledger only.
+  };
+
+  // ── Toast helper ────────────────────────────────────────────────
+  const toastWrap = $('#toast-wrap');
+  const toast = (title, detail, tone = '') => {
+    if (!toastWrap) return;
+    const el = document.createElement('div');
+    el.className = 'toast ' + tone;
+    el.innerHTML = `<strong>${title}</strong>${detail ? `<span class="muted">${detail}</span>` : ''}`;
+    toastWrap.appendChild(el);
+    setTimeout(() => el.remove(), 3400);
   };
 
   txForm?.addEventListener('submit', (e) => {
@@ -1185,13 +1215,27 @@
     if (!isEdit) applyToBook(data);
     renderFeed();
     renderHoldings();
+    bindRowRemove();
     applyRowTags();
+    if (holdingsView === 'heat') renderHeatmap();
     recomputeAnalytics();
+    renderNotifs();
     liveTick();
 
     txStatus.className = 'modal__status ok';
     txStatus.textContent = isEdit ? 'Transaction updated.' : 'Transaction saved.';
-    setTimeout(closeTxModal, 500);
+
+    // Human-friendly confirmation toast so the user sees the P&L link
+    if (!isEdit) {
+      const notional = (+data.qty || 0) * (+data.price || 0);
+      const verb = { BUY: 'Bought', SELL: 'Sold', DIV: 'Recorded dividend', CPN: 'Recorded coupon', CALL: 'Recorded capital call', FX: 'Recorded FX', TRF: 'Recorded transfer' }[data.type] || 'Saved';
+      const tone = data.type === 'BUY' ? 'up' : data.type === 'SELL' ? 'down' : '';
+      const detail = notional > 0
+        ? `${data.symbol} · notional ${fmtUSD(notional)} · portfolio updated`
+        : `${data.symbol} · portfolio updated`;
+      toast(`${verb} ${data.symbol}`, detail, tone);
+    }
+    setTimeout(closeTxModal, 400);
   });
 
   txDelete?.addEventListener('click', () => {
