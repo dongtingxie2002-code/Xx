@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ashford &amp; Vere — Private Wealth Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-theme="night">
+  <div class="app">
+
+    <!-- ───────── Sidebar ───────── -->
+    <aside class="sidebar" aria-label="Primary">
+      <div class="brand">
+        <svg class="brand__mark" viewBox="0 0 40 40" aria-hidden="true">
+          <path d="M20 3 L35 12 V28 L20 37 L5 28 V12 Z" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M20 11 L28 16 V24 L20 29 L12 24 V16 Z" fill="currentColor" opacity=".28"/>
+          <path d="M20 11 V29 M12 16 L28 24 M28 16 L12 24" stroke="currentColor" stroke-width=".8" opacity=".6"/>
+        </svg>
+        <div class="brand__txt">
+          <span class="brand__name">Ashford &amp; Vere</span>
+          <span class="brand__tag">Private Wealth · Est. 1897</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <div class="nav__group">Portfolio</div>
+        <a class="nav__item is-active" href="#"><i data-ico="grid"></i>Overview<span class="nav__meta">⌘1</span></a>
+        <a class="nav__item" href="#"><i data-ico="coins"></i>Holdings</a>
+        <a class="nav__item" href="#"><i data-ico="line"></i>Performance</a>
+        <a class="nav__item" href="#"><i data-ico="alloc"></i>Allocation</a>
+
+        <div class="nav__group">Markets</div>
+        <a class="nav__item" href="#"><i data-ico="eye"></i>Watchlist</a>
+        <a class="nav__item" href="#"><i data-ico="news"></i>Research</a>
+        <a class="nav__item" href="#"><i data-ico="fx"></i>FX &amp; Rates</a>
+
+        <div class="nav__group">Wealth</div>
+        <a class="nav__item" href="#"><i data-ico="vault"></i>Private Markets</a>
+        <a class="nav__item" href="#"><i data-ico="bank"></i>Cash &amp; Banking</a>
+        <a class="nav__item" href="#"><i data-ico="tax"></i>Tax &amp; Reporting</a>
+        <a class="nav__item" href="#"><i data-ico="key"></i>Trusts &amp; Estate</a>
+
+        <div class="nav__group">Advisory</div>
+        <a class="nav__item" href="#"><i data-ico="chat"></i>Relationship Desk<span class="dot dot--live"></span></a>
+        <a class="nav__item" href="#"><i data-ico="doc"></i>Documents</a>
+        <a class="nav__item" href="#"><i data-ico="gear"></i>Preferences</a>
+      </nav>
+
+      <div class="advisor card card--advisor">
+        <div class="advisor__avatar" aria-hidden="true">EM</div>
+        <div class="advisor__body">
+          <span class="eyebrow">Your Relationship Manager</span>
+          <strong>Eleanor Marchetti</strong>
+          <span class="muted">Managing Director, Geneva</span>
+          <div class="advisor__row">
+            <button class="btn btn--ghost">Message</button>
+            <button class="btn btn--ghost">Book call</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ───────── Topbar ───────── -->
+    <header class="topbar">
+      <div class="breadcrumb">
+        <span>Client</span>
+        <span class="sep">/</span>
+        <span>H. St. Clair Family Office</span>
+        <span class="sep">/</span>
+        <strong>Consolidated Overview</strong>
+      </div>
+
+      <div class="top-actions">
+        <label class="search">
+          <svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m13.5 13.5 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <input placeholder="Search holdings, funds, documents…" />
+          <kbd>⌘K</kbd>
+        </label>
+        <button class="icon-btn" title="Market status" aria-label="Market status">
+          <span class="dot dot--live"></span><span class="small">NYSE Open</span>
+        </button>
+        <button class="icon-btn" title="Notifications" aria-label="Notifications">
+          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M10 2a5 5 0 0 0-5 5v3l-1.5 3h13L15 10V7a5 5 0 0 0-5-5Z M8 16a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          <span class="badge">3</span>
+        </button>
+        <div class="user">
+          <div class="user__avatar">HS</div>
+          <div class="user__meta">
+            <strong>Harcourt St. Clair</strong>
+            <span class="muted">Principal · Account 0041-778</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ───────── Main ───────── -->
+    <main class="main">
+
+      <!-- Hero / greeting -->
+      <section class="hero">
+        <div>
+          <span class="eyebrow">Monday, 20 April 2026 · Geneva 14:32 GMT+2</span>
+          <h1 class="display">Good afternoon, <em>Harcourt</em>.</h1>
+          <p class="lede">Markets are modestly risk‑on. Your consolidated portfolio is up <strong class="up" id="hero-day-return">+0.48%</strong> intraday, outpacing the MSCI All‑Country by 12&nbsp;bps.</p>
+        </div>
+        <div class="hero__actions">
+          <button class="btn btn--gold">Rebalance proposal</button>
+          <button class="btn btn--ghost">Export statement</button>
+        </div>
+      </section>
+
+      <!-- KPI strip -->
+      <section class="kpi-row" aria-label="Key portfolio metrics">
+
+        <article class="card kpi">
+          <header>
+            <span class="eyebrow">Total Wealth · AUM</span>
+            <span class="chip chip--muted">USD</span>
+          </header>
+          <div class="kpi__value" data-anim="aum">$248,614,902</div>
+          <footer>
+            <span class="up" id="kpi-aum-delta">▲ $1,189,412 today</span>
+            <svg class="spark" data-spark="aum" viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"></svg>
+          </footer>
+        </article>
+
+        <article class="card kpi">
+          <header>
+            <span class="eyebrow">Unrealised P&amp;L</span>
+            <span class="chip chip--muted">All positions</span>
+          </header>
+          <div class="kpi__value up" data-anim="pnl">+$38,204,117</div>
+          <footer>
+            <span class="muted">Cost basis $210.4M · <span class="up">+18.16%</span></span>
+            <svg class="spark" data-spark="pnl" viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"></svg>
+          </footer>
+        </article>
+
+        <article class="card kpi">
+          <header>
+            <span class="eyebrow">Today's P&amp;L</span>
+            <span class="chip chip--live"><span class="dot dot--live"></span>Live</span>
+          </header>
+          <div class="kpi__value up" data-anim="day">+$1,189,412</div>
+          <footer>
+            <span class="up">+0.48%</span>
+            <span class="muted">vs SPX +0.31% · STOXX +0.22%</span>
+          </footer>
+        </article>
+
+        <article class="card kpi">
+          <header>
+            <span class="eyebrow">YTD Return</span>
+            <span class="chip chip--muted">Time‑weighted</span>
+          </header>
+          <div class="kpi__value up">+11.74%</div>
+          <footer>
+            <span class="muted">Benchmark 60/40 · +7.12%</span>
+            <svg class="spark" data-spark="ytd" viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"></svg>
+          </footer>
+        </article>
+
+      </section>
+
+      <!-- Performance + Allocation -->
+      <section class="grid-2">
+
+        <article class="card chart-card">
+          <header class="card__head">
+            <div>
+              <h2 class="card__title">Consolidated Performance</h2>
+              <span class="muted">Net of fees · reported in USD</span>
+            </div>
+            <div class="segmented" role="tablist" aria-label="Range">
+              <button data-range="1M">1M</button>
+              <button data-range="3M">3M</button>
+              <button data-range="YTD" class="is-active">YTD</button>
+              <button data-range="1Y">1Y</button>
+              <button data-range="5Y">5Y</button>
+              <button data-range="ALL">ALL</button>
+            </div>
+          </header>
+
+          <div class="chart-legend">
+            <span class="legend-item"><i class="swatch swatch--gold"></i>Portfolio <strong class="up">+11.74%</strong></span>
+            <span class="legend-item"><i class="swatch swatch--muted"></i>60/40 Benchmark <strong>+7.12%</strong></span>
+            <span class="legend-item"><i class="swatch swatch--alt"></i>MSCI ACWI <strong>+5.93%</strong></span>
+          </div>
+
+          <svg id="perf-chart" class="chart" viewBox="0 0 800 300" preserveAspectRatio="none" aria-label="Performance chart"></svg>
+
+          <footer class="chart-foot">
+            <dl>
+              <div><dt>Sharpe</dt><dd>1.42</dd></div>
+              <div><dt>Vol (ann.)</dt><dd>8.6%</dd></div>
+              <div><dt>Max DD</dt><dd class="down">−6.2%</dd></div>
+              <div><dt>Alpha</dt><dd class="up">+3.1%</dd></div>
+              <div><dt>Beta</dt><dd>0.71</dd></div>
+            </dl>
+          </footer>
+        </article>
+
+        <article class="card">
+          <header class="card__head">
+            <div>
+              <h2 class="card__title">Asset Allocation</h2>
+              <span class="muted">Strategic vs. current weights</span>
+            </div>
+            <button class="btn btn--ghost btn--sm">Drift alerts</button>
+          </header>
+
+          <div class="alloc">
+            <svg id="donut" viewBox="0 0 160 160" aria-label="Allocation donut"></svg>
+            <ul class="alloc__legend" id="alloc-legend"></ul>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- Holdings + Watchlist -->
+      <section class="grid-2 grid-2--wide">
+
+        <article class="card">
+          <header class="card__head">
+            <div>
+              <h2 class="card__title">Top Holdings</h2>
+              <span class="muted">Live prices · delayed 15s for OTC</span>
+            </div>
+            <div class="tabs" role="tablist">
+              <button class="is-active">Equities</button>
+              <button>Fixed Income</button>
+              <button>Alternatives</button>
+              <button>FX</button>
+            </div>
+          </header>
+
+          <div class="table-wrap">
+            <table class="tbl" id="holdings">
+              <thead>
+                <tr>
+                  <th>Instrument</th>
+                  <th class="num">Qty</th>
+                  <th class="num">Last</th>
+                  <th class="num">Δ Day</th>
+                  <th class="num">Market Value</th>
+                  <th class="num">Unrealised P&amp;L</th>
+                  <th class="num">% Port</th>
+                </tr>
+              </thead>
+              <tbody><!-- injected --></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card">
+          <header class="card__head">
+            <div>
+              <h2 class="card__title">Watchlist</h2>
+              <span class="muted">Curated by the research desk</span>
+            </div>
+            <button class="btn btn--ghost btn--sm">+ Add</button>
+          </header>
+
+          <ul class="watch" id="watchlist"><!-- injected --></ul>
+        </article>
+
+      </section>
+
+      <!-- Private markets + Cash + Activity -->
+      <section class="grid-3">
+
+        <article class="card">
+          <header class="card__head">
+            <h2 class="card__title">Private Markets</h2>
+            <span class="chip chip--muted">Illiquid</span>
+          </header>
+          <ul class="pm">
+            <li>
+              <div>
+                <strong>Sequoia Capital Global Growth IV</strong>
+                <span class="muted">Venture · Vintage 2022</span>
+              </div>
+              <div class="num">
+                <strong>$14.8M</strong>
+                <span class="up">TVPI 1.61×</span>
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong>Blackstone Real Estate Partners X</strong>
+                <span class="muted">Real Estate · Vintage 2023</span>
+              </div>
+              <div class="num">
+                <strong>$9.2M</strong>
+                <span class="up">DPI 0.24×</span>
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong>Carlyle Partners VIII</strong>
+                <span class="muted">Buyout · Vintage 2021</span>
+              </div>
+              <div class="num">
+                <strong>$11.4M</strong>
+                <span class="up">IRR 18.2%</span>
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong>Ashford Art &amp; Collectibles Vehicle</strong>
+                <span class="muted">Passion assets · appraisal Q1</span>
+              </div>
+              <div class="num">
+                <strong>$7.9M</strong>
+                <span class="muted">Mark 1.09×</span>
+              </div>
+            </li>
+          </ul>
+          <footer class="card__foot">
+            <span class="muted">Committed $62.0M · Called $41.3M · Distributed $9.8M</span>
+          </footer>
+        </article>
+
+        <article class="card">
+          <header class="card__head">
+            <h2 class="card__title">Cash &amp; FX</h2>
+            <span class="chip chip--muted">6 custodians</span>
+          </header>
+          <ul class="cash">
+            <li><span class="flag">🇺🇸</span><strong>USD</strong><span class="num">$18,402,117</span><span class="muted">JPM Private Bank</span></li>
+            <li><span class="flag">🇨🇭</span><strong>CHF</strong><span class="num">CHF 4,210,800</span><span class="muted">Pictet &amp; Cie</span></li>
+            <li><span class="flag">🇬🇧</span><strong>GBP</strong><span class="num">£2,980,400</span><span class="muted">Coutts</span></li>
+            <li><span class="flag">🇪🇺</span><strong>EUR</strong><span class="num">€3,612,250</span><span class="muted">Lombard Odier</span></li>
+            <li><span class="flag">🇸🇬</span><strong>SGD</strong><span class="num">S$1,845,900</span><span class="muted">DBS Private</span></li>
+            <li><span class="flag">🇦🇪</span><strong>AED</strong><span class="num">د.إ 2,140,000</span><span class="muted">Emirates NBD</span></li>
+          </ul>
+          <footer class="card__foot">
+            <span class="muted">Blended yield on cash <strong class="up">4.82%</strong> · Avg duration 38 days</span>
+          </footer>
+        </article>
+
+        <article class="card">
+          <header class="card__head">
+            <h2 class="card__title">Recent Activity</h2>
+            <button class="btn btn--ghost btn--sm">View all</button>
+          </header>
+          <ul class="feed">
+            <li>
+              <span class="feed__dot up">BUY</span>
+              <div>
+                <strong>Purchased 1,200 NVDA @ $892.40</strong>
+                <span class="muted">Morgan Stanley · 20 Apr, 13:41 GMT+2</span>
+              </div>
+            </li>
+            <li>
+              <span class="feed__dot down">SELL</span>
+              <div>
+                <strong>Trimmed 4,500 META @ $512.10</strong>
+                <span class="muted">Goldman Sachs · 20 Apr, 11:08</span>
+              </div>
+            </li>
+            <li>
+              <span class="feed__dot">DIV</span>
+              <div>
+                <strong>Dividend received · MSFT $18,420</strong>
+                <span class="muted">Custody JPM · 18 Apr</span>
+              </div>
+            </li>
+            <li>
+              <span class="feed__dot">FX</span>
+              <div>
+                <strong>CHF→USD 1,000,000 @ 1.1042</strong>
+                <span class="muted">Pictet &amp; Cie · 17 Apr</span>
+              </div>
+            </li>
+            <li>
+              <span class="feed__dot">CALL</span>
+              <div>
+                <strong>Capital call · Carlyle VIII $420,000</strong>
+                <span class="muted">Settles T+3 · 16 Apr</span>
+              </div>
+            </li>
+          </ul>
+        </article>
+
+      </section>
+
+      <!-- Footer -->
+      <footer class="legal">
+        <div>
+          <strong>Ashford &amp; Vere SA</strong> · Rue du Rhône 62, 1204 Genève · Regulated by FINMA
+        </div>
+        <div class="muted">
+          Information is indicative and may be delayed. Past performance is not indicative of future results. Prepared exclusively for H. St. Clair &amp; Family.
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
