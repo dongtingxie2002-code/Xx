@@ -1023,6 +1023,18 @@
     txLast.textContent  = transactions.length
       ? fmtDateLong(transactions.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0].date)
       : 'never';
+    // Live realised P&L + dividend/coupon income from the full history
+    const realised = transactions.reduce((s, t) => {
+      if (t.type !== 'SELL') return s;
+      const h = holdings.find((x) => x.sym === t.symbol);
+      if (!h) return s;
+      return s + ((+t.price || 0) - h.cost) * (+t.qty || 0) - (+t.fee || 0);
+    }, 0);
+    const income = transactions.reduce((s, t) => s + ((t.type === 'DIV' || t.type === 'CPN') ? (+t.price || 0) : 0), 0);
+    const realEl = $('#tx-realised');
+    const incEl  = $('#tx-income');
+    if (realEl) { realEl.textContent = (realised >= 0 ? '+' : '') + fmtUSD(realised); realEl.className = signCls(realised); }
+    if (incEl)  { incEl.textContent  = fmtUSD(income); }
 
     if (!transactions.length) {
       feedEl.innerHTML = `<li class="empty"><span class="big">No transactions yet</span><span>Use <strong>+ New</strong> to record a trade, dividend or capital event.</span></li>`;
@@ -1411,6 +1423,7 @@
     out.push({ kind: 'action', label: 'Open preferences',           group: 'Action', k: '⚙',  act: () => $('#prefs-btn').click() });
     out.push({ kind: 'action', label: 'Add private-market holding', group: 'Action', k: '+',  act: () => $('#pm-add').click() });
     out.push({ kind: 'action', label: 'Add cash account',           group: 'Action', k: '+',  act: () => $('#cash-add').click() });
+    out.push({ kind: 'action', label: 'Keyboard shortcuts',         group: 'Action', k: '?',  act: () => { $('#help-modal').hidden = false; } });
     // Holdings
     holdings.forEach((h) => out.push({
       kind: 'holding', sym: h.sym, label: `${h.sym} · ${h.name}`, group: 'Holding', k: h.sym.slice(0, 2),
@@ -1517,6 +1530,8 @@
   }));
 
   // Keyboard shortcuts
+  const helpModal = $('#help-modal');
+  helpModal?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => helpModal.hidden = true));
   document.addEventListener('keydown', (e) => {
     const target = e.target;
     const inForm = target && /INPUT|TEXTAREA|SELECT/.test(target.tagName) && !target.closest('#cmd-modal');
@@ -1531,6 +1546,31 @@
       const map = { '1': 'overview', '2': 'holdings-section', '3': 'performance' };
       scrollToSection(map[e.key]);
     }
+    if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+      e.preventDefault();
+      helpModal.hidden = !helpModal.hidden;
+    }
+  });
+
+  // ── Click-to-trade: watchlist and holdings row → pre-filled TX ────
+  const prefillTxModal = ({ symbol, price, type = 'BUY' }) => {
+    openTxModal(null);
+    $('#tx-type').value   = type;
+    $('#tx-symbol').value = symbol || '';
+    if (Number.isFinite(+price)) $('#tx-price').value = (+price).toFixed(2);
+    setTimeout(() => $('#tx-qty').focus(), 80);
+  };
+
+  holdingsBody?.addEventListener('click', (e) => {
+    // Ignore clicks on the editable price cell and the remove column
+    if (e.target.closest('td[data-field="px"]')) return;
+    if (e.target.closest('.row-remove')) return;
+    if (e.detail === 2) return; // double-clicks handled elsewhere
+    const tr = e.target.closest('tr[data-sym]');
+    if (!tr) return;
+    const h = holdings.find((x) => x.sym === tr.dataset.sym);
+    if (!h) return;
+    prefillTxModal({ symbol: h.sym, price: h.px, type: 'BUY' });
   });
 
   // ── Watchlist CRUD ───────────────────────────────────────────────
@@ -1586,6 +1626,16 @@
   });
   // Initial bind
   bindWatchRemove();
+
+  // Click a watchlist row to start a trade
+  $('#watchlist')?.addEventListener('click', (e) => {
+    if (e.target.closest('.remove')) return;
+    const li = e.target.closest('li[data-sym]');
+    if (!li) return;
+    const w = watchlist.find((x) => x.sym === li.dataset.sym);
+    if (!w) return;
+    prefillTxModal({ symbol: w.sym, price: w.px, type: 'BUY' });
+  });
 
   // ── Positions CRUD ───────────────────────────────────────────────
   const posModal = $('#pos-modal');

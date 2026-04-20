@@ -521,7 +521,13 @@
 
           <ul class="feed" id="feed"></ul>
           <footer class="card__foot">
-            <span class="muted">Saved locally on this device · <span id="tx-count">0</span> transactions · last update <span id="tx-last">never</span></span>
+            <div class="tx-totals">
+              <div><span class="eyebrow">Realised P&amp;L</span><strong id="tx-realised">$0</strong></div>
+              <div><span class="eyebrow">Income YTD</span><strong id="tx-income">$0</strong></div>
+              <div><span class="eyebrow">Count</span><strong id="tx-count">0</strong></div>
+              <div><span class="eyebrow">Last</span><strong id="tx-last">never</strong></div>
+            </div>
+            <span class="muted small">Saved locally on this device · realised P&amp;L uses current average cost</span>
           </footer>
         </article>
 
@@ -551,6 +557,39 @@
           <footer class="modal__foot">
             <button class="btn btn--ghost" data-close>Cancel</button>
             <button id="bulk-apply" class="btn btn--gold">Apply prices</button>
+          </footer>
+        </div>
+      </div>
+
+      <!-- Shortcuts help -->
+      <div id="help-modal" class="modal" role="dialog" aria-modal="true" hidden>
+        <div class="modal__backdrop" data-close></div>
+        <div class="modal__panel">
+          <header class="modal__head">
+            <div>
+              <h3 class="modal__title">Keyboard shortcuts</h3>
+              <span class="muted">For power users on desktop</span>
+            </div>
+            <button type="button" class="icon-btn" data-close aria-label="Close">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </header>
+          <div class="modal__body">
+            <ul class="help-grid">
+              <li><span><kbd class="kbd">⌘</kbd>/<kbd class="kbd">Ctrl</kbd> + <kbd class="kbd">K</kbd></span><span>Open command palette</span></li>
+              <li><span><kbd class="kbd">⌘</kbd> + <kbd class="kbd">1</kbd></span><span>Go to Overview</span></li>
+              <li><span><kbd class="kbd">⌘</kbd> + <kbd class="kbd">2</kbd></span><span>Go to Holdings</span></li>
+              <li><span><kbd class="kbd">⌘</kbd> + <kbd class="kbd">3</kbd></span><span>Go to Performance</span></li>
+              <li><span><kbd class="kbd">?</kbd></span><span>Show this cheat sheet</span></li>
+              <li><span><kbd class="kbd">Esc</kbd></span><span>Close the topmost modal</span></li>
+              <li><span><kbd class="kbd">Tab</kbd> / <kbd class="kbd">⇧</kbd><kbd class="kbd">Tab</kbd></span><span>Cycle focus inside modals</span></li>
+              <li><span>Double‑click a price</span><span>Inline edit with ⏎ to commit</span></li>
+              <li><span>Click a watchlist item</span><span>Start a prefilled BUY ticket</span></li>
+              <li><span>Click a holdings row</span><span>Start a prefilled BUY ticket</span></li>
+            </ul>
+          </div>
+          <footer class="modal__foot">
+            <button type="button" class="btn btn--gold" data-close>Got it</button>
           </footer>
         </div>
       </div>
