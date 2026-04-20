@@ -53,6 +53,25 @@
     { sym: 'UST10',name: 'US 10Y Yield',        px:    4.28, pct:  0.02, isYield: true },
   ];
 
+  // Geographic + currency exposure (look-through)
+  const geographic = [
+    { name: 'North America', flag: '🇺🇸', current: 48, target: 45 },
+    { name: 'Europe ex-UK',  flag: '🇪🇺', current: 18, target: 20 },
+    { name: 'Switzerland',   flag: '🇨🇭', current:  9, target:  8 },
+    { name: 'United Kingdom',flag: '🇬🇧', current:  7, target:  7 },
+    { name: 'Japan',         flag: '🇯🇵', current:  6, target:  7 },
+    { name: 'Asia ex-Japan', flag: '🇸🇬', current:  8, target:  9 },
+    { name: 'Emerging Mkts', flag: '🌐', current:  4, target:  4 },
+  ];
+  const currency = [
+    { name: 'US Dollar',     flag: '🇺🇸', current: 52, target: 50 },
+    { name: 'Swiss Franc',   flag: '🇨🇭', current: 14, target: 15 },
+    { name: 'Euro',          flag: '🇪🇺', current: 12, target: 13 },
+    { name: 'Pound Sterling',flag: '🇬🇧', current:  8, target:  8 },
+    { name: 'Japanese Yen',  flag: '🇯🇵', current:  6, target:  7 },
+    { name: 'Other',         flag: '🌐', current:  8, target:  7 },
+  ];
+
   // Allocation (strategic vs current)
   const allocation = [
     { name: 'Public Equities',     current: 42, target: 40, color: '#c8a86b' },
@@ -198,6 +217,8 @@
 
   // ── Performance chart ─────────────────────────────────────────────
   const perfChart = $('#perf-chart');
+  const perfTip   = $('#perf-tip');
+  let perfGeom = null; // populated by renderPerf so the hover handler can use it
   const renderPerf = () => {
     const W = 800, H = 300, pad = { l: 44, r: 16, t: 14, b: 28 };
     perfChart.innerHTML = '';
@@ -291,7 +312,69 @@
     });
     lbl.textContent = '+11.74%';
     perfChart.appendChild(lbl);
+
+    // Hover crosshair + focus markers (hidden until mousemove)
+    const crossG = svgEl('g', { id: 'perf-cross', opacity: 0 });
+    crossG.appendChild(svgEl('line', {
+      id: 'perf-cross-line',
+      x1: 0, x2: 0, y1: pad.t, y2: H - pad.b,
+      stroke: 'var(--gold)', 'stroke-width': 1, 'stroke-dasharray': '2 4', opacity: 0.7,
+    }));
+    ['port', 'bm', 'acwi'].forEach((k) => {
+      const fill = k === 'port' ? 'var(--gold)' : k === 'bm' ? 'var(--ink-2)' : 'var(--accent)';
+      crossG.appendChild(svgEl('circle', { id: `perf-dot-${k}`, cx: 0, cy: 0, r: 3.5, fill }));
+    });
+    perfChart.appendChild(crossG);
+
+    perfGeom = { W, H, pad, xOf, yOf };
   };
+
+  // ── Performance chart interactivity ──────────────────────────────
+  const baseDate = new Date(2026, 0, 2); // trading days start 2 Jan
+  const dayLabel = (i) => {
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + Math.round(i * 1.45)); // sparse trading-day feel
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  };
+
+  const onPerfMove = (ev) => {
+    if (!perfGeom) return;
+    const { W, pad, xOf, yOf } = perfGeom;
+    const rect = perfChart.getBoundingClientRect();
+    const scaleX = rect.width / W;
+    const px = (ev.clientX - rect.left) / scaleX; // svg-space x
+    const { port, bm, acwi } = perfSeries;
+    const n = port.length;
+    const t = Math.max(pad.l, Math.min(W - 16, px));
+    const i = Math.round(((t - pad.l) / (W - pad.l - 16)) * (n - 1));
+    const idx = Math.max(0, Math.min(n - 1, i));
+
+    const cx = xOf(idx, n);
+    $('#perf-cross').setAttribute('opacity', 1);
+    $('#perf-cross-line').setAttribute('x1', cx);
+    $('#perf-cross-line').setAttribute('x2', cx);
+    $('#perf-dot-port').setAttribute('cx', cx); $('#perf-dot-port').setAttribute('cy', yOf(port[idx]));
+    $('#perf-dot-bm').setAttribute('cx', cx);   $('#perf-dot-bm').setAttribute('cy', yOf(bm[idx]));
+    $('#perf-dot-acwi').setAttribute('cx', cx); $('#perf-dot-acwi').setAttribute('cy', yOf(acwi[idx]));
+
+    perfTip.innerHTML = `
+      <div class="tooltip__date">${dayLabel(idx)}</div>
+      <div class="tooltip__row"><span class="sw" style="background:var(--gold)"></span><span>Portfolio</span><span class="v ${signCls(port[idx] - 100)}">${fmtPct(port[idx] - 100)}</span></div>
+      <div class="tooltip__row"><span class="sw" style="background:var(--ink-2)"></span><span>60/40</span><span class="v ${signCls(bm[idx] - 100)}">${fmtPct(bm[idx] - 100)}</span></div>
+      <div class="tooltip__row"><span class="sw" style="background:var(--accent)"></span><span>MSCI ACWI</span><span class="v ${signCls(acwi[idx] - 100)}">${fmtPct(acwi[idx] - 100)}</span></div>`;
+    perfTip.classList.add('is-visible');
+    perfTip.setAttribute('aria-hidden', 'false');
+    perfTip.style.left = `${(cx / W) * 100}%`;
+    perfTip.style.top  = `${(yOf(port[idx]) / perfGeom.H) * 100}%`;
+  };
+  const onPerfLeave = () => {
+    const cross = $('#perf-cross');
+    if (cross) cross.setAttribute('opacity', 0);
+    perfTip.classList.remove('is-visible');
+    perfTip.setAttribute('aria-hidden', 'true');
+  };
+  perfChart.addEventListener('mousemove', onPerfMove);
+  perfChart.addEventListener('mouseleave', onPerfLeave);
 
   // ── Donut allocation chart ───────────────────────────────────────
   const renderDonut = () => {
@@ -360,6 +443,33 @@
     });
     centre2.textContent = '$248.6M';
     svg.appendChild(centre2);
+  };
+
+  // ── Exposure bars (geographic + currency) ─────────────────────────
+  const renderBars = (rootSel, data) => {
+    const root = $(rootSel);
+    const max = Math.max(...data.map((d) => Math.max(d.current, d.target)));
+    root.innerHTML = '';
+    data.forEach((d, i) => {
+      const drift = d.current - d.target;
+      const driftCls = drift > 0 ? 'up' : drift < 0 ? 'down' : 'muted';
+      const fillPct   = (d.current / max) * 100;
+      const targetPct = (d.target / max) * 100;
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <div class="name"><span class="flag">${d.flag}</span>${d.name}</div>
+        <div class="rail">
+          <span class="rail__fill" style="width:0%"></span>
+          <span class="rail__target" style="left:${targetPct}%"></span>
+        </div>
+        <div class="w">${d.current}%</div>
+        <div class="drift ${driftCls}">${drift >= 0 ? '+' : ''}${drift}pp</div>`;
+      root.appendChild(li);
+      // animate the fill in on next frame
+      requestAnimationFrame(() => {
+        li.querySelector('.rail__fill').style.width = fillPct + '%';
+      });
+    });
   };
 
   // ── Live tick engine ─────────────────────────────────────────────
@@ -487,6 +597,8 @@
   renderKpiSparks();
   renderPerf();
   renderDonut();
+  renderBars('#geo-bars', geographic);
+  renderBars('#fx-bars', currency);
   // Run one tick immediately so % figures align with live state
   liveTick();
   setInterval(liveTick, 1600);

@@ -171,20 +171,22 @@ input{font:inherit; color:inherit}
   background: var(--gold); border-radius: 2px;
 }
 .nav__meta{ margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3) }
-.nav__item i[data-ico]{ width: 16px; height: 16px; display: inline-block; opacity: .85 }
 
-/* Tiny inline icon set drawn via masks */
-i[data-ico]{
-  background: currentColor;
-  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-position: center; mask-position: center;
-  -webkit-mask-size: contain; mask-size: contain;
+.ico{
+  width: 16px; height: 16px;
+  flex: 0 0 auto;
+  color: var(--ink-2);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: color .18s ease;
 }
-/* Icons are rendered as refined bullet markers via ::before */
-.nav__item i[data-ico]::before{
-  content:""; display:inline-block; width:6px; height:6px; border-radius:2px;
-  background: var(--gold); opacity:.55;
-}
+.nav__item:hover .ico{ color: var(--ink-1) }
+.nav__item.is-active .ico{ color: var(--gold-soft) }
+
+.nav__item .dot--live{ margin-left: auto }
 
 /* Advisor card ---------------------------------------------------- */
 .card--advisor{
@@ -388,7 +390,40 @@ i[data-ico]{
 .swatch--muted{ background: var(--ink-2) }
 .swatch--alt{ background: var(--accent) }
 
-.chart{ width: 100%; height: 300px; display: block }
+.chart-shell{ position: relative }
+.chart{ width: 100%; height: 300px; display: block; cursor: crosshair }
+.tooltip{
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, calc(-100% - 14px));
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-width: 180px;
+  box-shadow: 0 20px 40px -20px rgba(0,0,0,.7);
+  font-size: 12px;
+  transition: opacity .12s ease;
+  z-index: 5;
+}
+.tooltip.is-visible{ opacity: 1 }
+.tooltip__date{
+  font-size: 10.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+.tooltip__row{
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 2px 0;
+}
+.tooltip__row .sw{ width: 10px; height: 2px; border-radius: 2px }
+.tooltip__row .v{ font-family: var(--font-mono); font-weight: 600 }
 .chart-foot{
   margin-top: 10px; padding-top: 12px; border-top: 1px dashed var(--line);
 }
@@ -499,6 +534,38 @@ i[data-ico]{
 .cash .flag{ font-size: 18px }
 .cash .num{ font-family: var(--font-mono); font-weight: 600 }
 .cash .muted{ font-size: 11.5px; text-align: right }
+
+/* Bars (geographic / currency exposure) ---------------------------- */
+.bars{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px }
+.bars li{
+  display: grid;
+  grid-template-columns: 140px 1fr 64px 56px;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+}
+.bars .name{ display: flex; align-items: center; gap: 8px }
+.bars .flag{ font-size: 15px; line-height: 1 }
+.bars .rail{
+  position: relative;
+  height: 8px;
+  background: var(--bg-1);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bars .rail__fill{
+  position: absolute; inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--gold-deep), var(--gold-soft));
+  border-radius: 999px;
+  transition: width .45s cubic-bezier(.2,.7,.2,1);
+}
+.bars .rail__target{
+  position: absolute; top: -2px; bottom: -2px; width: 2px;
+  background: var(--ink-1); opacity: .55;
+}
+.bars .w{ font-family: var(--font-mono); font-weight: 600; text-align: right }
+.bars .drift{ font-family: var(--font-mono); font-size: 11px; text-align: right }
 
 /* Activity feed --------------------------------------------------- */
 .feed{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column }
