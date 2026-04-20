@@ -28,17 +28,19 @@
   const signCls = (n) => (n >= 0 ? 'up' : 'down');
 
   // ── Seed data: holdings ───────────────────────────────────────────
+  // sensitivities: beta (to equity market), dur (bond duration years),
+  // fx (fraction of non-USD exposure), gold (1 if physical gold).
   const holdings = [
-    { sym: 'NVDA',  name: 'NVIDIA Corp.',           sector: 'Semiconductors',   qty:  6800, cost: 612.40, px: 892.40 },
-    { sym: 'MSFT',  name: 'Microsoft Corp.',        sector: 'Software',         qty: 12400, cost: 318.10, px: 422.75 },
-    { sym: 'AAPL',  name: 'Apple Inc.',             sector: 'Hardware',         qty: 18600, cost: 164.20, px: 208.90 },
-    { sym: 'LVMH',  name: 'LVMH Moët Hennessy',     sector: 'Luxury · Paris',   qty:  9200, cost: 642.00, px: 748.40 },
-    { sym: 'NESN',  name: 'Nestlé SA',              sector: 'Staples · SIX',    qty: 14800, cost:  98.70, px: 104.12 },
-    { sym: 'BRK.B', name: 'Berkshire Hathaway B',   sector: 'Conglomerate',     qty:  8400, cost: 312.20, px: 408.30 },
-    { sym: 'ASML',  name: 'ASML Holding',           sector: 'Semi Equip · AEX', qty:  3100, cost: 642.10, px: 910.20 },
-    { sym: 'UST10', name: 'US Treasury 4.25% 2034', sector: 'Govt Bond',        qty: 75000, cost:  99.10, px: 101.42 },
-    { sym: 'GOLD',  name: 'Physical Gold (LBMA)',   sector: 'Commodity · oz',   qty:  8200, cost: 1980.0, px: 2342.10 },
-    { sym: 'TSLA',  name: 'Tesla Inc.',             sector: 'Autos',            qty:  5400, cost: 242.80, px: 174.60 },
+    { sym: 'NVDA',  name: 'NVIDIA Corp.',           sector: 'Semiconductors',   qty:  6800, cost: 612.40, px: 892.40, beta: 1.55, dur: 0,    fx: 0,   gold: 0 },
+    { sym: 'MSFT',  name: 'Microsoft Corp.',        sector: 'Software',         qty: 12400, cost: 318.10, px: 422.75, beta: 1.05, dur: 0,    fx: 0,   gold: 0 },
+    { sym: 'AAPL',  name: 'Apple Inc.',             sector: 'Hardware',         qty: 18600, cost: 164.20, px: 208.90, beta: 1.20, dur: 0,    fx: 0,   gold: 0 },
+    { sym: 'LVMH',  name: 'LVMH Moët Hennessy',     sector: 'Luxury · Paris',   qty:  9200, cost: 642.00, px: 748.40, beta: 0.90, dur: 0,    fx: 1,   gold: 0 },
+    { sym: 'NESN',  name: 'Nestlé SA',              sector: 'Staples · SIX',    qty: 14800, cost:  98.70, px: 104.12, beta: 0.55, dur: 0,    fx: 1,   gold: 0 },
+    { sym: 'BRK.B', name: 'Berkshire Hathaway B',   sector: 'Conglomerate',     qty:  8400, cost: 312.20, px: 408.30, beta: 0.85, dur: 0,    fx: 0,   gold: 0 },
+    { sym: 'ASML',  name: 'ASML Holding',           sector: 'Semi Equip · AEX', qty:  3100, cost: 642.10, px: 910.20, beta: 1.40, dur: 0,    fx: 1,   gold: 0 },
+    { sym: 'UST10', name: 'US Treasury 4.25% 2034', sector: 'Govt Bond',        qty: 75000, cost:  99.10, px: 101.42, beta: 0,    dur: 9.5,  fx: 0,   gold: 0 },
+    { sym: 'GOLD',  name: 'Physical Gold (LBMA)',   sector: 'Commodity · oz',   qty:  8200, cost: 1980.0, px: 2342.10, beta: 0.1,  dur: 0,    fx: 0.3, gold: 1 },
+    { sym: 'TSLA',  name: 'Tesla Inc.',             sector: 'Autos',            qty:  5400, cost: 242.80, px: 174.60, beta: 1.95, dur: 0,    fx: 0,   gold: 0 },
   ];
 
   // Watchlist (separate from holdings)
@@ -51,6 +53,31 @@
     { sym: 'CL',   name: 'WTI Crude · bbl',     px:   83.12, pct: -0.44 },
     { sym: 'DXY',  name: 'US Dollar Index',     px:  104.21, pct: -0.08 },
     { sym: 'UST10',name: 'US 10Y Yield',        px:    4.28, pct:  0.02, isYield: true },
+  ];
+
+  // Single-name concentration limits (bank-set max weights). The live % is
+  // derived from positions at tick time.
+  const concentrationLimits = {
+    'NVDA':  10,
+    'LVMH':   7,
+    'MSFT':   7,
+    'ASML':   5,
+    'BRK.B':  6,
+  };
+  const flagBySym = {
+    'NVDA': '🇺🇸', 'MSFT': '🇺🇸', 'AAPL': '🇺🇸', 'BRK.B': '🇺🇸', 'TSLA': '🇺🇸',
+    'LVMH': '🇫🇷', 'NESN': '🇨🇭', 'ASML': '🇳🇱', 'UST10': '🇺🇸', 'GOLD': '🌐',
+  };
+
+  // Upcoming events (next 14 days)
+  const events = [
+    { d: 22, m: 'Apr', tag: 'CALL', cls: 'call', label: 'Capital call · Carlyle Partners VIII',         meta: 'Wire $420,000 · T+3 settle' },
+    { d: 23, m: 'Apr', tag: 'CPN',  cls: 'cpn',  label: 'Coupon · UST 4.25% 2034',                      meta: 'Expected $1,593 per $100k notional' },
+    { d: 25, m: 'Apr', tag: 'DIV',  cls: 'div',  label: 'Ex‑dividend · Microsoft',                      meta: 'Estimated $9,300 · payable 13 May' },
+    { d: 28, m: 'Apr', tag: 'DIV',  cls: 'div',  label: 'Ex‑dividend · Nestlé',                         meta: 'CHF 3.00 per share · payable 06 May' },
+    { d: 30, m: 'Apr', tag: 'CALL', cls: 'call', label: 'Capital call · Blackstone RE Partners X',      meta: 'Wire $1.1M · confirm IRS W‑8' },
+    { d:  2, m: 'May', tag: 'MAT',  cls: 'mat',  label: 'Bond maturity · UBS Subordinated 3.5% 2026',   meta: 'Redemption $2.0M · redeploy?' },
+    { d:  5, m: 'May', tag: 'RV',   cls: '',     label: 'Rebalance review with Eleanor Marchetti',      meta: '14:00 GMT+2 · Geneva office' },
   ];
 
   // Geographic + currency exposure (look-through)
@@ -472,6 +499,178 @@
     });
   };
 
+  // Snapshot of the anchors the user can restore to (pre-override prices)
+  const seedPx = new Map(holdings.map((h) => [h.sym, h.px]));
+
+  // ── Inline price editing ─────────────────────────────────────────
+  let paused = false;
+  const setPaused = (v) => {
+    paused = v;
+    document.body.classList.toggle('ticks-paused', paused);
+  };
+
+  // Commit a manual price override. `isManual` sticks so random ticks
+  // stop drifting away from the user's chosen level.
+  const commitPrice = (sym, nextPx) => {
+    const h = holdings.find((x) => x.sym === sym);
+    if (!h || !Number.isFinite(nextPx) || nextPx <= 0) return false;
+    h.px = nextPx;
+    anchors.set(sym, nextPx);           // mean-revert to the new anchor
+    h.isManual = true;
+    renderHoldings();                   // re-render so % columns are consistent
+    applyRowTags();
+    recomputeAnalytics();
+    liveTick();                         // refresh KPI totals immediately
+    return true;
+  };
+
+  const applyRowTags = () => {
+    holdings.forEach((h) => {
+      const tr = holdingsBody.querySelector(`tr[data-sym="${h.sym}"]`);
+      if (!tr) return;
+      tr.classList.toggle('is-manual', !!h.isManual);
+      const cell = tr.querySelector('[data-field="px"]');
+      if (cell) cell.classList.toggle('is-manual', !!h.isManual);
+    });
+  };
+
+  const beginEdit = (cell) => {
+    if (cell.classList.contains('is-edit')) return;
+    const tr = cell.closest('tr');
+    const sym = tr.dataset.sym;
+    const h = holdings.find((x) => x.sym === sym);
+    const orig = cell.textContent;
+    cell.classList.add('is-edit');
+    cell.innerHTML = `<input class="px-input" type="number" step="0.01" min="0" value="${h.px.toFixed(2)}" />`;
+    const inp = cell.querySelector('input');
+    inp.focus(); inp.select();
+    // While a cell is open, ticks are paused so the input doesn't get stomped.
+    const wasPaused = paused;
+    setPaused(true);
+
+    const finish = (save) => {
+      cell.classList.remove('is-edit');
+      if (save) {
+        const v = parseFloat(inp.value);
+        if (!commitPrice(sym, v)) cell.textContent = orig;
+      } else {
+        cell.textContent = orig;
+      }
+      if (!wasPaused) setPaused(false);
+    };
+
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter')      { e.preventDefault(); finish(true); }
+      else if (e.key === 'Escape'){ e.preventDefault(); finish(false); }
+    });
+    inp.addEventListener('blur', () => finish(true), { once: true });
+  };
+
+  holdingsBody.addEventListener('dblclick', (e) => {
+    const cell = e.target.closest('td[data-field="px"]');
+    if (cell) beginEdit(cell);
+  });
+  // Also allow a single click on the manual-override dot to edit
+  holdingsBody.addEventListener('click', (e) => {
+    const cell = e.target.closest('td[data-field="px"]');
+    if (!cell) return;
+    if (e.detail === 2) return; // dblclick handler takes over
+  });
+
+  // ── Pause / resume ticks ─────────────────────────────────────────
+  $('#pause-ticks')?.addEventListener('click', () => setPaused(!paused));
+
+  // ── Reset manual overrides ──────────────────────────────────────
+  $('#reset-prices')?.addEventListener('click', () => {
+    holdings.forEach((h) => {
+      const orig = seedPx.get(h.sym);
+      if (orig != null) { h.px = orig; anchors.set(h.sym, orig); }
+      h.isManual = false;
+    });
+    renderHoldings();
+    applyRowTags();
+    recomputeAnalytics();
+    liveTick();
+  });
+
+  // ── Bulk-update modal ────────────────────────────────────────────
+  const modal       = $('#bulk-modal');
+  const bulkInput   = $('#bulk-input');
+  const bulkTickers = $('#bulk-tickers');
+  const bulkStatus  = $('#bulk-status');
+  const bulkApply   = $('#bulk-apply');
+
+  if (bulkTickers) {
+    bulkTickers.innerHTML = holdings.map((h) => `<span>${h.sym}</span>`).join('');
+  }
+
+  const openModal = () => {
+    modal.hidden = false;
+    setTimeout(() => bulkInput.focus(), 50);
+  };
+  const closeModal = () => { modal.hidden = true };
+
+  $('#bulk-edit')?.addEventListener('click', openModal);
+  modal?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', closeModal));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal && !modal.hidden) closeModal();
+  });
+
+  const parseBulk = (raw) => {
+    const results = [];
+    const errors  = [];
+    raw.split(/\r?\n/).forEach((line, idx) => {
+      const l = line.trim();
+      if (!l) return;
+      const parts = l.split(/[\s,\t]+/).filter(Boolean);
+      if (parts.length < 2) { errors.push(`Line ${idx + 1}: need ticker and price`); return; }
+      const sym = parts[0].toUpperCase().replace(/[^\w.-]/g, '');
+      const px  = parseFloat(parts[1].replace(/[^\d.\-]/g, ''));
+      if (!sym || !Number.isFinite(px) || px <= 0) {
+        errors.push(`Line ${idx + 1}: could not parse "${l}"`); return;
+      }
+      const held = holdings.find((h) => h.sym === sym);
+      if (!held) { errors.push(`Line ${idx + 1}: ${sym} is not in the book`); return; }
+      results.push({ sym, px });
+    });
+    return { results, errors };
+  };
+
+  const updateBulkStatus = () => {
+    if (!bulkInput) return;
+    const { results, errors } = parseBulk(bulkInput.value);
+    bulkStatus.className = 'modal__status';
+    if (!results.length && !errors.length) {
+      bulkStatus.classList.add('muted');
+      bulkStatus.textContent = 'Awaiting input.';
+    } else if (errors.length && !results.length) {
+      bulkStatus.classList.add('err');
+      bulkStatus.textContent = errors[0];
+    } else if (errors.length) {
+      bulkStatus.classList.add('ok');
+      bulkStatus.textContent = `Ready to apply ${results.length} · ${errors.length} line(s) will be skipped`;
+    } else {
+      bulkStatus.classList.add('ok');
+      bulkStatus.textContent = `Ready to apply ${results.length} price${results.length > 1 ? 's' : ''}`;
+    }
+  };
+  bulkInput?.addEventListener('input', updateBulkStatus);
+
+  bulkApply?.addEventListener('click', () => {
+    const { results, errors } = parseBulk(bulkInput.value);
+    if (!results.length) {
+      bulkStatus.classList.remove('ok', 'muted');
+      bulkStatus.classList.add('err');
+      bulkStatus.textContent = errors[0] || 'Nothing to apply.';
+      return;
+    }
+    results.forEach(({ sym, px }) => commitPrice(sym, px));
+    bulkStatus.classList.remove('err', 'muted');
+    bulkStatus.classList.add('ok');
+    bulkStatus.textContent = `Applied ${results.length} price${results.length > 1 ? 's' : ''}.`;
+    setTimeout(closeModal, 600);
+  });
+
   // ── Live tick engine ─────────────────────────────────────────────
   // Each security gets a mean-reverting random walk around its anchor px.
   const anchors = new Map(holdings.map((h) => [h.sym, h.px]));
@@ -479,12 +678,19 @@
   const dayOpen = new Map(holdings.map((h) => [h.sym, h.px * (1 - (rnd() - 0.5) * 0.01)]));
 
   const liveTick = () => {
+    if (paused) return;
     // Holdings
     holdings.forEach((h) => {
-      const anchor = anchors.get(h.sym);
-      const meanRev = (anchor - h.px) * 0.02;
-      const shock   = (rnd() - 0.5) * h.px * 0.0025;
-      const next    = Math.max(0.01, h.px + meanRev + shock);
+      let next;
+      if (h.isManual) {
+        // Respect manual overrides — don't drift away from the user's price.
+        next = h.px;
+      } else {
+        const anchor = anchors.get(h.sym);
+        const meanRev = (anchor - h.px) * 0.02;
+        const shock   = (rnd() - 0.5) * h.px * 0.0025;
+        next    = Math.max(0.01, h.px + meanRev + shock);
+      }
       const prev    = h.px;
       h.px = next;
       h.dayPct = ((h.px / dayOpen.get(h.sym)) - 1) * 100;
@@ -566,6 +772,8 @@
       else if (next < prev) li.classList.remove('flash-up'), li.classList.add('flash-down');
       setTimeout(() => li.classList.remove('flash-up', 'flash-down'), 900);
     });
+
+    recomputeAnalytics();
   };
 
   // ── Segmented range: re-scale performance series visually ────────
@@ -599,7 +807,91 @@
   renderDonut();
   renderBars('#geo-bars', geographic);
   renderBars('#fx-bars', currency);
+
+  // ── Analytics (concentration, VaR, stress) ───────────────────────
+  const recomputeAnalytics = () => {
+    const totalMV = holdings.reduce((s, h) => s + h.qty * h.px, 0);
+    const OTHER_SLEEVE_VAL = 191_000_000;
+    const aum = totalMV + OTHER_SLEEVE_VAL;
+
+    // Top 5 single-name concentration (by MV, with limit markers)
+    const ranked = holdings
+      .map((h) => ({
+        sym: h.sym,
+        name: h.name.split(/[,·]/)[0].replace(/ Corp\.| Inc\.| Holding| SA| Partners.*/, '').trim(),
+        flag: flagBySym[h.sym] || '🌐',
+        current: +(h.qty * h.px / aum * 100).toFixed(2),
+        target: concentrationLimits[h.sym] || 5,
+      }))
+      .sort((a, b) => b.current - a.current)
+      .slice(0, 5);
+    renderBars('#risk-bars', ranked);
+
+    // Portfolio daily vol from the perf series (approx)
+    const port = perfSeries.port;
+    const rets = [];
+    for (let i = 1; i < port.length; i++) rets.push(port[i] / port[i - 1] - 1);
+    const mu = rets.reduce((a, b) => a + b, 0) / rets.length;
+    const variance = rets.reduce((s, r) => s + (r - mu) ** 2, 0) / rets.length;
+    const sigma = Math.sqrt(variance); // daily
+    const z95 = 1.645, cvarZ = 2.063;
+    const varUsd  = z95 * sigma * aum;
+    const cvarUsd = cvarZ * sigma * aum;
+    $('#risk-var').textContent  = fmtUSD(varUsd);
+    $('#risk-var-pct').textContent = fmtPct(varUsd / aum * 100).replace('+', '') + ' of AUM';
+    $('#risk-cvar').textContent = fmtUSD(cvarUsd);
+    $('#risk-cvar-pct').textContent = fmtPct(cvarUsd / aum * 100).replace('+', '') + ' · tail loss';
+
+    const annVol = sigma * Math.sqrt(252);
+    $('#risk-te').textContent = (annVol * 0.38 * 100).toFixed(1) + '%'; // TE ~ active vol
+    const sharpe = annVol > 0 ? ((0.1174 - 0.04) / annVol).toFixed(2) : '—';
+    $('#risk-ir').textContent = sharpe;
+
+    // Stress scenarios computed from per-position sensitivities
+    const spxShock    = holdings.reduce((s, h) => s + h.qty * h.px * (-0.10 * h.beta), 0);
+    const ratesShock  = holdings.reduce((s, h) => s + h.qty * h.px * (-0.01 * h.dur), 0)
+                      + holdings.reduce((s, h) => s + h.qty * h.px * (-0.003 * h.beta), 0) * 0.3;
+    const usdShock    = holdings.reduce((s, h) => s + h.qty * h.px * (0.05 * h.fx + 0.03 * h.gold), 0);
+    const creditShock = holdings.reduce((s, h) => s + h.qty * h.px * (-0.005 * (h.dur > 0 ? 0.6 : 0.02)), 0);
+
+    const setStress = (key, v) => {
+      const el = $(`[data-stress="${key}"]`);
+      if (!el) return;
+      el.textContent = (v >= 0 ? '+' : '−') + fmtUSD(Math.abs(v));
+      el.className = 'num ' + signCls(v);
+    };
+    setStress('rates',  ratesShock);
+    setStress('spx',    spxShock);
+    setStress('usd',    usdShock);
+    setStress('credit', creditShock);
+  };
+
+  // ── Events list ──────────────────────────────────────────────────
+  const eventsList = $('#events');
+  if (eventsList) {
+    eventsList.innerHTML = events.map((e) => `
+      <li>
+        <div class="date"><span class="d">${e.d}</span><span class="m">${e.m}</span></div>
+        <div class="label"><strong>${e.label}</strong><span>${e.meta}</span></div>
+        <span class="badge-tag ${e.cls}">${e.tag}</span>
+      </li>`).join('');
+  }
+
+  // ── Theme toggle ────────────────────────────────────────────────
+  const themeBtn = $('#theme-toggle');
+  const savedTheme = localStorage.getItem('av-theme');
+  if (savedTheme) document.body.dataset.theme = savedTheme;
+  themeBtn?.addEventListener('click', () => {
+    const next = document.body.dataset.theme === 'day' ? 'night' : 'day';
+    document.body.dataset.theme = next;
+    localStorage.setItem('av-theme', next);
+    // Re-render SVG charts so stroke/fill custom-property values recompute
+    renderKpiSparks();
+    renderPerf();
+    renderDonut();
+  });
   // Run one tick immediately so % figures align with live state
+  recomputeAnalytics();
   liveTick();
   setInterval(liveTick, 1600);
 

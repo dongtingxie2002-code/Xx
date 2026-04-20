@@ -125,6 +125,10 @@
         <button class="icon-btn" title="Market status" aria-label="Market status">
           <span class="dot dot--live"></span><span class="small">NYSE Open</span>
         </button>
+        <button id="theme-toggle" class="theme-toggle" title="Toggle day/night" aria-label="Toggle theme">
+          <svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.5 4.5l2.2 2.2M17.3 17.3l2.2 2.2M4.5 19.5l2.2-2.2M17.3 6.7l2.2-2.2"/></svg>
+          <svg class="ico-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>
+        </button>
         <button class="icon-btn" title="Notifications" aria-label="Notifications">
           <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M10 2a5 5 0 0 0-5 5v3l-1.5 3h13L15 10V7a5 5 0 0 0-5-5Z M8 16a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
           <span class="badge">3</span>
@@ -273,13 +277,19 @@
           <header class="card__head">
             <div>
               <h2 class="card__title">Top Holdings</h2>
-              <span class="muted">Live prices · delayed 15s for OTC</span>
+              <span class="muted">Double‑click any price to override · <kbd class="kbd">⏎</kbd> to commit · <kbd class="kbd">Esc</kbd> to cancel</span>
             </div>
-            <div class="tabs" role="tablist">
-              <button class="is-active">Equities</button>
-              <button>Fixed Income</button>
-              <button>Alternatives</button>
-              <button>FX</button>
+            <div class="holdings-actions">
+              <button id="pause-ticks" class="btn btn--ghost btn--sm" title="Pause / resume live ticks">
+                <svg class="ico-pause" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+                <svg class="ico-play"  viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M7 5v14l12-7Z"/></svg>
+                <span class="btn-label">Pause</span>
+              </button>
+              <button id="bulk-edit" class="btn btn--ghost btn--sm" title="Paste a batch of prices">
+                <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 10h8M8 14h6"/></svg>
+                Bulk update
+              </button>
+              <button id="reset-prices" class="btn btn--ghost btn--sm" title="Revert any manual overrides">Reset</button>
             </div>
           </header>
 
@@ -343,6 +353,90 @@
           <ul class="bars" id="fx-bars"></ul>
           <footer class="card__foot">
             <span class="muted">Net exposure post‑hedge: <strong>USD 64%</strong> · CHF 11% · EUR 9% · GBP 5% · JPY 4% · Other 7%</span>
+          </footer>
+        </article>
+
+      </section>
+
+      <!-- Risk analytics + Upcoming events -->
+      <section class="grid-2">
+
+        <article class="card">
+          <header class="card__head">
+            <div>
+              <h2 class="card__title">Risk &amp; Analytics</h2>
+              <span class="muted">95% VaR, 1‑day · parametric · USD</span>
+            </div>
+            <div class="segmented">
+              <button class="is-active">1D</button>
+              <button>1W</button>
+              <button>1M</button>
+            </div>
+          </header>
+
+          <div class="risk-grid">
+            <div class="risk-kpi">
+              <span class="eyebrow">Portfolio VaR</span>
+              <strong id="risk-var">$1.92M</strong>
+              <span class="muted" id="risk-var-pct">0.77% of AUM</span>
+            </div>
+            <div class="risk-kpi">
+              <span class="eyebrow">Conditional VaR</span>
+              <strong id="risk-cvar">$2.84M</strong>
+              <span class="muted" id="risk-cvar-pct">1.14% · tail loss</span>
+            </div>
+            <div class="risk-kpi">
+              <span class="eyebrow">Tracking Error</span>
+              <strong id="risk-te">3.4%</strong>
+              <span class="muted">vs 60/40 benchmark</span>
+            </div>
+            <div class="risk-kpi">
+              <span class="eyebrow">Info. Ratio</span>
+              <strong id="risk-ir" class="up">0.91</strong>
+              <span class="muted">3Y rolling</span>
+            </div>
+          </div>
+
+          <div class="risk-bars">
+            <span class="eyebrow">Top Single‑Name Concentration</span>
+            <ul class="bars" id="risk-bars"></ul>
+          </div>
+
+          <footer class="card__foot">
+            <div class="stress">
+              <span class="eyebrow">Scenario Stress · notional P&amp;L</span>
+              <div class="stress__row" id="stress-row">
+                <span>Rates +100 bps</span><span class="num" data-stress="rates">—</span>
+                <span>SPX −10%</span><span class="num" data-stress="spx">—</span>
+                <span>USD −5%</span><span class="num" data-stress="usd">—</span>
+                <span>Credit spread +50 bps</span><span class="num" data-stress="credit">—</span>
+              </div>
+            </div>
+          </footer>
+        </article>
+
+        <article class="card">
+          <header class="card__head">
+            <div>
+              <h2 class="card__title">Upcoming &amp; Liquidity</h2>
+              <span class="muted">Next 14 days · all custodians</span>
+            </div>
+            <button class="btn btn--ghost btn--sm">Calendar</button>
+          </header>
+
+          <ul class="events" id="events"></ul>
+
+          <footer class="card__foot">
+            <div class="liquidity">
+              <span class="eyebrow">Liquidity ladder</span>
+              <ul class="ladder">
+                <li><span>T+0</span><span class="num">$22.4M</span></li>
+                <li><span>&lt; 1M</span><span class="num">$41.8M</span></li>
+                <li><span>1–3M</span><span class="num">$28.6M</span></li>
+                <li><span>3–12M</span><span class="num">$72.3M</span></li>
+                <li><span>&gt; 1Y</span><span class="num">$83.5M</span></li>
+              </ul>
+            </div>
           </footer>
         </article>
 
@@ -466,6 +560,34 @@
         </article>
 
       </section>
+
+      <!-- Bulk price-update modal -->
+      <div id="bulk-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="bulk-title" hidden>
+        <div class="modal__backdrop" data-close></div>
+        <div class="modal__panel">
+          <header class="modal__head">
+            <div>
+              <h3 id="bulk-title" class="modal__title">Bulk price update</h3>
+              <span class="muted">Paste one ticker &amp; price per line · CSV, TSV or whitespace accepted</span>
+            </div>
+            <button class="icon-btn" data-close aria-label="Close">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </header>
+          <div class="modal__body">
+            <textarea id="bulk-input" spellcheck="false" placeholder="NVDA 910.50&#10;MSFT, 428.10&#10;AAPL&#9;210.25&#10;LVMH 755.00&#10;UST10 101.58&#10;GOLD 2354.80"></textarea>
+            <div class="modal__hint">
+              <span class="eyebrow">Tickers</span>
+              <span class="tickers" id="bulk-tickers"></span>
+            </div>
+            <div id="bulk-status" class="modal__status muted">Awaiting input.</div>
+          </div>
+          <footer class="modal__foot">
+            <button class="btn btn--ghost" data-close>Cancel</button>
+            <button id="bulk-apply" class="btn btn--gold">Apply prices</button>
+          </footer>
+        </div>
+      </div>
 
       <!-- Footer -->
       <footer class="legal">
