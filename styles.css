@@ -1258,51 +1258,221 @@ body[data-theme="day"] .field select{
 }
 body[data-theme="day"] .field input[type="date"]::-webkit-calendar-picker-indicator{ filter: none }
 
-/* Day theme ------------------------------------------------------- */
+/* Day theme — default neutral (overridden by specific design themes below) */
 body[data-theme="day"]{
-  --bg-0: #f4efe6;
-  --bg-1: #ece6d8;
-  --bg-2: #fbf7ee;
-  --bg-3: #f4efe2;
-  --line: #d8cfbb;
-  --line-soft: #e4dcc6;
+  --bg-0: #ffffff;
+  --bg-1: #f7f5f0;
+  --bg-2: #ffffff;
+  --bg-3: #f1ede4;
+  --line: #e0dacd;
+  --line-soft: #ece7da;
 
-  --ink-0: #1e2230;
-  --ink-1: #3a3f4e;
-  --ink-2: #6b6a61;
-  --ink-3: #9b9684;
+  --ink-0: #1f1e1c;
+  --ink-1: #3a3833;
+  --ink-2: #6b6961;
+  --ink-3: #9c9789;
 
-  --gold: #a8853f;
-  --gold-soft: #b5923f;
-  --gold-deep: #7f6023;
+  --gold: #cc785c;
+  --gold-soft: #d88a6f;
+  --gold-deep: #a85a3f;
 
-  --up: #3f8e6a;
-  --up-soft: rgba(63,142,106,.15);
-  --down: #b94f4f;
-  --down-soft: rgba(185,79,79,.13);
-  --accent: #4a689b;
+  --up: #2b7a4b;
+  --up-soft: rgba(43,122,75,.14);
+  --down: #b83d3d;
+  --down-soft: rgba(184,61,61,.12);
+  --accent: #5a7aa8;
 
   --shadow: 0 1px 0 rgba(255,255,255,.6) inset,
-            0 18px 34px -22px rgba(30,34,48,.22);
+            0 18px 34px -24px rgba(30,28,24,.15);
 }
+
+/* ───── Design 1 · Editorial (default day) · pure white + Claude warmth ───── */
+body[data-theme="day"][data-design="editorial"]{
+  --bg-0: #ffffff;
+  --bg-1: #fafaf7;
+  --bg-2: #ffffff;
+  --bg-3: #f4f2ec;
+  --line: #e5e1d8;
+  --line-soft: #f0ede6;
+  --ink-0: #1f1e1c;
+  --ink-1: #3c3a35;
+  --ink-2: #6e6a61;
+  --ink-3: #a29c91;
+  --gold: #cc785c;
+  --gold-soft: #db8a6f;
+  --gold-deep: #a55a3f;
+  --up: #2b7a4b;
+  --down: #b83d3d;
+  --accent: #6a84ad;
+}
+
+/* ───── Design 2 · Warm Sand · cream background, softer feel ───── */
+body[data-theme="day"][data-design="sand"]{
+  --bg-0: #f5f1e8;
+  --bg-1: #ede8dc;
+  --bg-2: #faf7f0;
+  --bg-3: #efeadc;
+  --line: #d4ccb6;
+  --line-soft: #e1dbc9;
+  --ink-0: #1e1c18;
+  --ink-1: #3b3831;
+  --ink-2: #6b6659;
+  --ink-3: #9e9784;
+  --gold: #cc785c;
+  --gold-soft: #de9278;
+  --gold-deep: #9b5236;
+  --up: #2f7a4e;
+  --down: #b53e3e;
+  --accent: #6583af;
+}
+
+/* ───── Design 3 · Swiss Clinical · pure white, deep navy, no serif ───── */
+body[data-theme="day"][data-design="clinical"]{
+  --bg-0: #ffffff;
+  --bg-1: #f6f8fb;
+  --bg-2: #ffffff;
+  --bg-3: #eef1f6;
+  --line: #dde2ea;
+  --line-soft: #edf0f5;
+  --ink-0: #0b1929;
+  --ink-1: #2b3a4f;
+  --ink-2: #566375;
+  --ink-3: #97a0b0;
+  --gold: #0b2a4a;
+  --gold-soft: #183f68;
+  --gold-deep: #071a2e;
+  --up: #1e7a4a;
+  --down: #a02a2a;
+  --accent: #0b2a4a;
+
+  --font-serif: "Inter", -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+}
+body[data-theme="day"][data-design="clinical"] .brand__name,
+body[data-theme="day"][data-design="clinical"] .display,
+body[data-theme="day"][data-design="clinical"] .card__title,
+body[data-theme="day"][data-design="clinical"] .modal__title,
+body[data-theme="day"][data-design="clinical"] .kpi__value,
+body[data-theme="day"][data-design="clinical"] .risk-kpi strong,
+body[data-theme="day"][data-design="clinical"] .events .date .d,
+body[data-theme="day"][data-design="clinical"] .ticker__sym,
+body[data-theme="day"][data-design="clinical"] .watch .sym,
+body[data-theme="day"][data-design="clinical"] .advisor__avatar,
+body[data-theme="day"][data-design="clinical"] .user__avatar,
+body[data-theme="day"][data-design="clinical"] .heat-tile .sym{
+  font-family: "Inter", -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -.005em;
+}
+body[data-theme="day"][data-design="clinical"] .display em{
+  font-style: normal; color: var(--ink-0); font-weight: 600;
+}
+
+/* ───── Design 4 · Broadsheet · newsprint beige, red accent ───── */
+body[data-theme="day"][data-design="broadsheet"]{
+  --bg-0: #f4ecd8;
+  --bg-1: #eee5ce;
+  --bg-2: #ffffff;
+  --bg-3: #f7edd3;
+  --line: #d3c59d;
+  --line-soft: #e5d9b3;
+  --ink-0: #18110a;
+  --ink-1: #342a1a;
+  --ink-2: #665b43;
+  --ink-3: #998c6b;
+  --gold: #8a1c1c;
+  --gold-soft: #a82525;
+  --gold-deep: #641414;
+  --up: #226b37;
+  --down: #8a1c1c;
+  --accent: #5c4a1f;
+}
+
+/* Shared day-theme surface polish (applies to all four designs) --- */
 body[data-theme="day"]{
   background:
-    radial-gradient(1200px 700px at 85% -10%, rgba(168,133,63,.07), transparent 60%),
-    radial-gradient(900px 600px at -10% 110%, rgba(74,104,155,.05), transparent 60%),
+    radial-gradient(1200px 700px at 85% -10%, rgba(204,120,92,.06), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgba(90,122,168,.04), transparent 60%),
     var(--bg-0);
 }
 body[data-theme="day"] .sidebar{
-  background: linear-gradient(180deg, #efe8d6 0%, #e8e0cc 100%);
+  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
 }
 body[data-theme="day"] .topbar{
-  background: linear-gradient(180deg, rgba(244,239,230,.96), rgba(244,239,230,.82));
+  background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.82));
 }
 body[data-theme="day"] .kpi__value,
 body[data-theme="day"] .card__title,
 body[data-theme="day"] .display{ color: var(--ink-0) }
-body[data-theme="day"] .user__avatar{ background: #efe6d1; color: var(--gold-deep) }
+body[data-theme="day"] .user__avatar{ background: var(--bg-3); color: var(--gold-deep) }
 body[data-theme="day"] .tbl .ticker__sym,
-body[data-theme="day"] .watch .sym{ background: #efe6d1; color: var(--gold-deep) }
+body[data-theme="day"] .watch .sym{ background: var(--bg-3); color: var(--gold-deep) }
+body[data-theme="day"] .kbd,
+body[data-theme="day"] .search kbd,
+body[data-theme="day"] .palette__input kbd{ background: var(--bg-1) }
+body[data-theme="day"][data-design="broadsheet"] .sidebar,
+body[data-theme="day"][data-design="broadsheet"] .card{
+  background: var(--bg-2);
+}
+
+/* Design picker ─────────────────────────────────────────────────── */
+.design-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 640px){ .design-grid{ grid-template-columns: 1fr } }
+.design-card{
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  text-align: left;
+  background: var(--bg-2);
+  color: var(--ink-0);
+  transition: border-color .15s, transform .08s;
+}
+.design-card:hover{ border-color: var(--gold) }
+.design-card.is-selected{
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(204,120,92,.15);
+}
+.design-card__preview{
+  height: 78px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+.design-card__preview .swatches{
+  position: absolute; top: 8px; right: 10px;
+  display: flex; gap: 4px;
+}
+.design-card__preview .sw{
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 1px solid rgba(0,0,0,.08);
+}
+.design-card__preview .head{
+  font-size: 15px; font-weight: 500;
+  letter-spacing: -.005em;
+  line-height: 1;
+}
+.design-card__preview .line{
+  height: 4px; border-radius: 2px; width: 60%;
+}
+.design-card h4{
+  margin: 0 0 2px;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 15px;
+}
+.design-card__desc{
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.4;
+}
 
 /* Responsive ------------------------------------------------------ */
 @media (max-width: 1280px){

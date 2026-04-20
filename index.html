@@ -125,6 +125,9 @@
           <svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.5 4.5l2.2 2.2M17.3 17.3l2.2 2.2M4.5 19.5l2.2-2.2M17.3 6.7l2.2-2.2"/></svg>
           <svg class="ico-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>
         </button>
+        <button id="design-btn" class="theme-toggle" title="Design" aria-label="Choose design">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18 3 3 0 0 0 3-3 3 3 0 0 1 3-3h.5a2.5 2.5 0 0 0 2.5-2.5V12a9 9 0 0 0-9-9Z"/><circle cx="7.5" cy="10.5" r="1" fill="currentColor"/><circle cx="12" cy="7.5" r="1" fill="currentColor"/><circle cx="16.5" cy="10.5" r="1" fill="currentColor"/></svg>
+        </button>
         <button id="prefs-btn" class="theme-toggle" title="Preferences" aria-label="Preferences">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a7.7 7.7 0 0 0 .1-3l2-1.5-2-3.5-2.3.9a7.7 7.7 0 0 0-2.6-1.5L14 4h-4l-.6 2.4a7.7 7.7 0 0 0-2.6 1.5l-2.3-.9-2 3.5 2 1.5a7.7 7.7 0 0 0 .1 3l-2 1.5 2 3.5 2.3-.9a7.7 7.7 0 0 0 2.6 1.5L10 20h4l.6-2.4a7.7 7.7 0 0 0 2.6-1.5l2.3.9 2-3.5Z"/></svg>
         </button>
@@ -609,6 +612,86 @@
           </div>
           <footer class="modal__foot">
             <button type="button" class="btn btn--gold" data-close>Got it</button>
+          </footer>
+        </div>
+      </div>
+
+      <!-- Design picker -->
+      <div id="design-modal" class="modal" role="dialog" aria-modal="true" hidden>
+        <div class="modal__backdrop" data-close></div>
+        <div class="modal__panel">
+          <header class="modal__head">
+            <div>
+              <h3 class="modal__title">Choose a look</h3>
+              <span class="muted">Four white‑background designs. Your choice is saved on this device.</span>
+            </div>
+            <button type="button" class="icon-btn" data-close aria-label="Close">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </header>
+          <div class="modal__body">
+            <div class="design-grid" id="design-grid">
+
+              <button type="button" class="design-card" data-design="editorial">
+                <div class="design-card__preview" style="background:#ffffff;color:#1f1e1c;border:1px solid #e5e1d8">
+                  <div class="swatches">
+                    <span class="sw" style="background:#ffffff"></span>
+                    <span class="sw" style="background:#cc785c"></span>
+                    <span class="sw" style="background:#1f1e1c"></span>
+                  </div>
+                  <div class="head" style="font-family:'Fraunces',serif">Portfolio</div>
+                  <div class="line" style="background:#cc785c"></div>
+                </div>
+                <h4>Editorial</h4>
+                <div class="design-card__desc">Pure white, Claude terracotta accent, Fraunces serif. Our default.</div>
+              </button>
+
+              <button type="button" class="design-card" data-design="sand">
+                <div class="design-card__preview" style="background:#faf7f0;color:#1e1c18;border:1px solid #d4ccb6">
+                  <div class="swatches">
+                    <span class="sw" style="background:#f5f1e8"></span>
+                    <span class="sw" style="background:#cc785c"></span>
+                    <span class="sw" style="background:#3b3831"></span>
+                  </div>
+                  <div class="head" style="font-family:'Fraunces',serif">Portfolio</div>
+                  <div class="line" style="background:#cc785c"></div>
+                </div>
+                <h4>Warm Sand</h4>
+                <div class="design-card__desc">Cream background, softer surfaces — Claude's product feel.</div>
+              </button>
+
+              <button type="button" class="design-card" data-design="clinical">
+                <div class="design-card__preview" style="background:#ffffff;color:#0b1929;border:1px solid #dde2ea">
+                  <div class="swatches">
+                    <span class="sw" style="background:#ffffff"></span>
+                    <span class="sw" style="background:#0b2a4a"></span>
+                    <span class="sw" style="background:#566375"></span>
+                  </div>
+                  <div class="head" style="font-family:'Inter',sans-serif;font-weight:600">Portfolio</div>
+                  <div class="line" style="background:#0b2a4a"></div>
+                </div>
+                <h4>Swiss Clinical</h4>
+                <div class="design-card__desc">Pure white with navy accent. Sans‑serif everywhere — think Pictet or Lombard.</div>
+              </button>
+
+              <button type="button" class="design-card" data-design="broadsheet">
+                <div class="design-card__preview" style="background:#f4ecd8;color:#18110a;border:1px solid #d3c59d">
+                  <div class="swatches">
+                    <span class="sw" style="background:#f4ecd8"></span>
+                    <span class="sw" style="background:#8a1c1c"></span>
+                    <span class="sw" style="background:#18110a"></span>
+                  </div>
+                  <div class="head" style="font-family:'Fraunces',serif;font-style:italic">Portfolio</div>
+                  <div class="line" style="background:#8a1c1c"></div>
+                </div>
+                <h4>Broadsheet</h4>
+                <div class="design-card__desc">Newsprint ochre with a deep red serif. FT Weekend energy.</div>
+              </button>
+
+            </div>
+          </div>
+          <footer class="modal__foot">
+            <button type="button" class="btn btn--ghost" data-close>Done</button>
           </footer>
         </div>
       </div>

@@ -1433,6 +1433,7 @@
     out.push({ kind: 'action', label: 'Import transactions (JSON)', group: 'Action', k: '↑',  act: () => $('#tx-import').click() });
     out.push({ kind: 'action', label: 'Toggle day / night theme',   group: 'Action', k: '☼',  act: () => themeBtn.click() });
     out.push({ kind: 'action', label: 'Open preferences',           group: 'Action', k: '⚙',  act: () => $('#prefs-btn').click() });
+    out.push({ kind: 'action', label: 'Choose design (Editorial / Sand / Clinical / Broadsheet)', group: 'Action', k: '❖', act: () => $('#design-btn').click() });
     out.push({ kind: 'action', label: 'Add private-market holding', group: 'Action', k: '+',  act: () => $('#pm-add').click() });
     out.push({ kind: 'action', label: 'Add cash account',           group: 'Action', k: '+',  act: () => $('#cash-add').click() });
     out.push({ kind: 'action', label: 'Keyboard shortcuts',         group: 'Action', k: '?',  act: () => { $('#help-modal').hidden = false; } });
@@ -2090,8 +2091,39 @@
     setTimeout(() => URL.revokeObjectURL(url), 200);
   });
 
+  // ── Design picker ───────────────────────────────────────────────
+  const DESIGN_KEY = 'av-design-v1';
+  const DESIGNS = ['editorial', 'sand', 'clinical', 'broadsheet'];
+  const savedDesign = localStorage.getItem(DESIGN_KEY) || 'editorial';
+  const applyDesign = (d) => {
+    if (!DESIGNS.includes(d)) d = 'editorial';
+    document.body.dataset.design = d;
+    localStorage.setItem(DESIGN_KEY, d);
+    $$('.design-card').forEach((c) => c.classList.toggle('is-selected', c.dataset.design === d));
+    // Re-render SVG charts so stroke/fill custom-property values recompute
+    if (typeof renderKpiSparks === 'function') { renderKpiSparks(); renderPerf(); renderDonut(); }
+  };
+  document.body.dataset.design = savedDesign;
+  // Default new users to the day theme + editorial design
+  if (!localStorage.getItem('av-theme')) {
+    document.body.dataset.theme = 'day';
+    localStorage.setItem('av-theme', 'day');
+  }
+
+  const designModal = $('#design-modal');
+  $('#design-btn')?.addEventListener('click', () => {
+    designModal.hidden = false;
+    $$('.design-card').forEach((c) => c.classList.toggle('is-selected', c.dataset.design === (document.body.dataset.design || 'editorial')));
+  });
+  designModal?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => designModal.hidden = true));
+  $('#design-grid')?.addEventListener('click', (e) => {
+    const card = e.target.closest('.design-card[data-design]');
+    if (!card) return;
+    applyDesign(card.dataset.design);
+  });
+
   // ── Preferences ─────────────────────────────────────────────────
-  const defaults = { ccy: 'USD', theme: savedTheme || 'night', tick: 1600, fmt: 'en-US' };
+  const defaults = { ccy: 'USD', theme: savedTheme || 'day', tick: 1600, fmt: 'en-US' };
   const prefs = Object.assign({}, defaults, storageGet(PREF_KEY, {}));
 
   const applyPrefs = () => {
