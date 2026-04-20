@@ -838,6 +838,79 @@ tr.is-manual td[data-field="px"]{ color: var(--gold-soft) }
   border-top: 1px solid var(--line-soft);
 }
 
+/* Transaction form ----------------------------------------------- */
+.form-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.field{ display: flex; flex-direction: column; gap: 5px; font-size: 12px }
+.field--wide{ grid-column: 1 / -1 }
+.field > span{
+  font-size: 10.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+.field input,
+.field select,
+.field textarea{
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  color: var(--ink-0);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s, background .15s;
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 40px; /* touch-friendly */
+}
+.field input[type="number"]{ font-family: var(--font-mono); font-variant-numeric: tabular-nums }
+.field textarea{ min-height: 64px; resize: vertical; font-family: var(--font-sans) }
+.field input:focus,
+.field select:focus,
+.field textarea:focus{
+  border-color: var(--gold-deep);
+  background: var(--bg-2);
+}
+.field select{
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a9588' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+}
+/* Keep the native date picker on iOS/Android readable */
+.field input[type="date"]::-webkit-calendar-picker-indicator{
+  filter: invert(.7);
+  cursor: pointer;
+}
+
+.modal__foot--split{ justify-content: flex-start }
+.modal__foot--split .spacer{ flex: 1 }
+.btn--danger{ color: var(--down); border-color: rgba(216,107,107,.35) }
+.btn--danger:hover{ background: var(--down-soft) }
+
+.feed li{ cursor: pointer; transition: background .15s }
+.feed li:hover{ background: rgba(255,255,255,.02) }
+.feed .empty{
+  cursor: default;
+  grid-template-columns: 1fr;
+  padding: 32px 12px;
+  text-align: center;
+  color: var(--ink-2);
+  border-bottom: 0;
+}
+.feed .empty .big{ display: block; font-family: var(--font-serif); font-size: 16px; color: var(--ink-1); margin-bottom: 4px }
+body[data-theme="day"] .field select{
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6a61' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+}
+body[data-theme="day"] .field input[type="date"]::-webkit-calendar-picker-indicator{ filter: none }
+
 /* Day theme ------------------------------------------------------- */
 body[data-theme="day"]{
   --bg-0: #f4efe6;
@@ -891,15 +964,89 @@ body[data-theme="day"] .watch .sym{ background: #efe6d1; color: var(--gold-deep)
   .grid-2, .grid-2--wide{ grid-template-columns: 1fr }
   .grid-3{ grid-template-columns: 1fr 1fr }
   .chart-foot dl{ grid-template-columns: repeat(3, 1fr) }
+  .risk-grid{ grid-template-columns: repeat(2, 1fr) }
+}
+@media (max-width: 980px){
+  .search{ min-width: 0; width: 220px }
+  .user__meta{ display: none }
+  .breadcrumb{ font-size: 12px; flex-wrap: wrap }
+  .holdings-actions{ flex-wrap: wrap }
+  .alloc{ grid-template-columns: 140px 1fr; gap: 14px }
+  #donut{ width: 140px; height: 140px }
+  .stress__row{ grid-template-columns: 1fr auto }
+  .ladder{ grid-template-columns: repeat(3, 1fr) }
+  .ladder li{ border-bottom: 1px solid var(--line-soft) }
+  .ladder li:nth-last-child(-n+2){ border-bottom: 0 }
 }
 @media (max-width: 860px){
-  .app{ grid-template-columns: 1fr; grid-template-rows: auto 64px 1fr }
-  .sidebar{ position: static; height: auto; grid-row: auto; border-right: 0; border-bottom: 1px solid var(--line-soft) }
-  .topbar{ grid-column: 1 }
-  .main{ grid-column: 1; padding: 20px 16px 40px }
-  .kpi-row{ grid-template-columns: 1fr 1fr }
+  .app{ grid-template-columns: 1fr; grid-template-rows: auto 56px 1fr }
+  .sidebar{
+    position: static; height: auto; grid-row: auto;
+    border-right: 0; border-bottom: 1px solid var(--line-soft);
+    padding: 12px 14px;
+  }
+  .brand{ padding: 6px 6px 10px }
+  .nav{ flex-direction: row; overflow-x: auto; gap: 4px; padding-bottom: 4px }
+  .nav__group{ display: none }
+  .nav__item{ white-space: nowrap; padding: 8px 12px }
+  .nav__item.is-active::before{ display: none }
+  .nav__item .nav__meta,
+  .nav__item .dot--live{ display: none }
+  .advisor{ display: none }
+  .topbar{ grid-column: 1; padding: 0 16px; height: 56px }
+  .main{ grid-column: 1; padding: 16px 14px 56px; gap: 18px }
+  .kpi-row{ grid-template-columns: 1fr 1fr; gap: 10px }
+  .kpi{ padding: 14px 14px 12px }
+  .kpi__value{ font-size: 22px }
   .grid-3{ grid-template-columns: 1fr }
-  .display{ font-size: 30px }
-  .hero{ flex-direction: column; align-items: flex-start }
-  .search{ min-width: 0; width: 100% }
+  .display{ font-size: 28px }
+  .hero{ flex-direction: column; align-items: flex-start; gap: 12px }
+  .hero__actions{ flex-wrap: wrap }
+  .search{ min-width: 0; width: 140px }
+  .search kbd{ display: none }
+  .icon-btn .small{ display: none }
+  .card{ padding: 14px 14px 12px }
+  .card__title{ font-size: 17px }
+  .card__head{ flex-wrap: wrap }
+  .chart-legend{ gap: 10px }
+  .chart{ height: 240px }
+  .chart-foot dl{ grid-template-columns: repeat(2, 1fr) }
+  .risk-grid{ grid-template-columns: 1fr 1fr; gap: 8px }
+  .risk-kpi strong{ font-size: 17px }
+  .segmented button{ padding: 5px 8px }
+  .tbl{ font-size: 12.5px }
+  .tbl thead th, .tbl tbody td{ padding: 10px 8px }
+  .tbl .ticker__sym{ display: none }
+  .bars li{ grid-template-columns: 92px 1fr 48px 44px; font-size: 11.5px }
+  .events li{ grid-template-columns: 46px 1fr auto }
+  .stress__row{ grid-template-columns: 1fr auto }
+
+  /* Modal as bottom-sheet on phones */
+  .modal{ place-items: end center }
+  .modal__panel{
+    width: 100vw;
+    max-height: 92vh;
+    border-radius: 18px 18px 0 0;
+    overflow-y: auto;
+  }
+  .modal__head{ padding: 16px 16px 8px; position: sticky; top: 0; background: var(--bg-2); z-index: 2 }
+  .modal__body{ padding: 12px 16px }
+  .modal__foot{ padding: 10px 16px 18px; position: sticky; bottom: 0; background: var(--bg-2) }
+  .form-grid{ grid-template-columns: 1fr }
+  #bulk-input{ min-height: 140px }
+  .legal{ flex-direction: column; gap: 6px }
+}
+@media (max-width: 480px){
+  .kpi-row{ grid-template-columns: 1fr }
+  .user__avatar{ width: 30px; height: 30px }
+  .icon-btn{ padding: 6px 8px }
+  .search{ width: 100px }
+  .top-actions{ gap: 6px }
+}
+
+/* Touch niceties ------------------------------------------------- */
+@media (hover: none){
+  .tbl td[data-field="px"]:hover{ background: transparent }
+  .feed li:hover{ background: transparent }
+  .nav__item:hover{ background: transparent }
 }

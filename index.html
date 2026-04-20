@@ -518,45 +518,17 @@
         <article class="card">
           <header class="card__head">
             <h2 class="card__title">Recent Activity</h2>
-            <button class="btn btn--ghost btn--sm">View all</button>
+            <div class="holdings-actions">
+              <button id="tx-new" class="btn btn--gold btn--sm" title="New transaction">+ New</button>
+              <button id="tx-export" class="btn btn--ghost btn--sm" title="Export JSON">Export</button>
+              <button id="tx-import" class="btn btn--ghost btn--sm" title="Import JSON">Import</button>
+              <input type="file" id="tx-import-file" accept="application/json,.json" hidden />
+            </div>
           </header>
-          <ul class="feed">
-            <li>
-              <span class="feed__dot up">BUY</span>
-              <div>
-                <strong>Purchased 1,200 NVDA @ $892.40</strong>
-                <span class="muted">Morgan Stanley · 20 Apr, 13:41 GMT+2</span>
-              </div>
-            </li>
-            <li>
-              <span class="feed__dot down">SELL</span>
-              <div>
-                <strong>Trimmed 4,500 META @ $512.10</strong>
-                <span class="muted">Goldman Sachs · 20 Apr, 11:08</span>
-              </div>
-            </li>
-            <li>
-              <span class="feed__dot">DIV</span>
-              <div>
-                <strong>Dividend received · MSFT $18,420</strong>
-                <span class="muted">Custody JPM · 18 Apr</span>
-              </div>
-            </li>
-            <li>
-              <span class="feed__dot">FX</span>
-              <div>
-                <strong>CHF→USD 1,000,000 @ 1.1042</strong>
-                <span class="muted">Pictet &amp; Cie · 17 Apr</span>
-              </div>
-            </li>
-            <li>
-              <span class="feed__dot">CALL</span>
-              <div>
-                <strong>Capital call · Carlyle VIII $420,000</strong>
-                <span class="muted">Settles T+3 · 16 Apr</span>
-              </div>
-            </li>
-          </ul>
+          <ul class="feed" id="feed"></ul>
+          <footer class="card__foot">
+            <span class="muted">Saved locally on this device · <span id="tx-count">0</span> transactions · last update <span id="tx-last">never</span></span>
+          </footer>
         </article>
 
       </section>
@@ -587,6 +559,87 @@
             <button id="bulk-apply" class="btn btn--gold">Apply prices</button>
           </footer>
         </div>
+      </div>
+
+      <!-- Transaction modal -->
+      <div id="tx-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tx-title" hidden>
+        <div class="modal__backdrop" data-close></div>
+        <form class="modal__panel modal__panel--form" id="tx-form">
+          <header class="modal__head">
+            <div>
+              <h3 id="tx-title" class="modal__title">New transaction</h3>
+              <span class="muted" id="tx-subtitle">Record a buy, sell, dividend, FX or capital event</span>
+            </div>
+            <button type="button" class="icon-btn" data-close aria-label="Close">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </header>
+          <div class="modal__body">
+            <input type="hidden" name="id" id="tx-id" />
+            <div class="form-grid">
+              <label class="field">
+                <span>Date</span>
+                <input type="date" name="date" id="tx-date" required />
+              </label>
+              <label class="field">
+                <span>Type</span>
+                <select name="type" id="tx-type" required>
+                  <option value="BUY">Buy</option>
+                  <option value="SELL">Sell</option>
+                  <option value="DIV">Dividend</option>
+                  <option value="CPN">Coupon</option>
+                  <option value="CALL">Capital call</option>
+                  <option value="FX">FX</option>
+                  <option value="TRF">Transfer</option>
+                </select>
+              </label>
+
+              <label class="field field--wide">
+                <span>Symbol / Instrument</span>
+                <input type="text" name="symbol" id="tx-symbol" list="tx-symbols" placeholder="e.g. NVDA" autocomplete="off" required />
+                <datalist id="tx-symbols"></datalist>
+              </label>
+
+              <label class="field">
+                <span>Quantity</span>
+                <input type="number" name="qty" id="tx-qty" step="any" inputmode="decimal" placeholder="0" />
+              </label>
+              <label class="field">
+                <span>Price / Rate</span>
+                <input type="number" name="price" id="tx-price" step="any" inputmode="decimal" placeholder="0.00" />
+              </label>
+
+              <label class="field">
+                <span>Fee (optional)</span>
+                <input type="number" name="fee" id="tx-fee" step="any" inputmode="decimal" placeholder="0.00" />
+              </label>
+              <label class="field">
+                <span>Currency</span>
+                <select name="ccy" id="tx-ccy">
+                  <option>USD</option><option>CHF</option><option>EUR</option>
+                  <option>GBP</option><option>JPY</option><option>SGD</option><option>AED</option>
+                </select>
+              </label>
+
+              <label class="field field--wide">
+                <span>Broker / Custodian</span>
+                <input type="text" name="broker" id="tx-broker" placeholder="e.g. Pictet & Cie" />
+              </label>
+
+              <label class="field field--wide">
+                <span>Notes</span>
+                <textarea name="notes" id="tx-notes" rows="2" placeholder="Internal reference, rationale or settlement notes"></textarea>
+              </label>
+            </div>
+            <div id="tx-status" class="modal__status muted">Fills Notional = Qty × Price − Fee · all figures can be edited later.</div>
+          </div>
+          <footer class="modal__foot modal__foot--split">
+            <button type="button" id="tx-delete" class="btn btn--ghost btn--danger" hidden>Delete</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn--ghost" data-close>Cancel</button>
+            <button type="submit" class="btn btn--gold">Save transaction</button>
+          </footer>
+        </form>
       </div>
 
       <!-- Footer -->

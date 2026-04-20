@@ -517,6 +517,7 @@
     h.px = nextPx;
     anchors.set(sym, nextPx);           // mean-revert to the new anchor
     h.isManual = true;
+    persistManualPrices();
     renderHoldings();                   // re-render so % columns are consistent
     applyRowTags();
     recomputeAnalytics();
@@ -587,6 +588,7 @@
       if (orig != null) { h.px = orig; anchors.set(h.sym, orig); }
       h.isManual = false;
     });
+    persistManualPrices();
     renderHoldings();
     applyRowTags();
     recomputeAnalytics();
@@ -670,6 +672,46 @@
     bulkStatus.textContent = `Applied ${results.length} price${results.length > 1 ? 's' : ''}.`;
     setTimeout(closeModal, 600);
   });
+
+  // ── Transaction store (persisted to localStorage) ────────────────
+  const TX_KEY = 'av-transactions-v1';
+  const PX_KEY = 'av-manual-prices-v1';
+  const storageGet = (k, fallback) => {
+    try {
+      const raw = localStorage.getItem(k);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch { return fallback; }
+  };
+  const storageSet = (k, v) => {
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
+  };
+
+  const seedTx = [
+    { id: 't-seed-1', date: '2026-04-20', type: 'BUY',  symbol: 'NVDA', qty: 1200, price: 892.40, fee: 0,   ccy: 'USD', broker: 'Morgan Stanley',     notes: '' },
+    { id: 't-seed-2', date: '2026-04-20', type: 'SELL', symbol: 'META', qty: 4500, price: 512.10, fee: 0,   ccy: 'USD', broker: 'Goldman Sachs',      notes: 'Trim' },
+    { id: 't-seed-3', date: '2026-04-18', type: 'DIV',  symbol: 'MSFT', qty: 0,    price: 0,      fee: 0,   ccy: 'USD', broker: 'JPM',                notes: 'Cash dividend $18,420' },
+    { id: 't-seed-4', date: '2026-04-17', type: 'FX',   symbol: 'CHFUSD', qty: 1000000, price: 1.1042, fee: 0, ccy: 'USD', broker: 'Pictet & Cie',    notes: 'CHF→USD' },
+    { id: 't-seed-5', date: '2026-04-16', type: 'CALL', symbol: 'CARLYLE8', qty: 0, price: 420000, fee: 0,   ccy: 'USD', broker: 'Carlyle',            notes: 'Capital call · T+3' },
+  ];
+  let transactions = storageGet(TX_KEY, null);
+  if (!Array.isArray(transactions)) {
+    transactions = seedTx.slice();
+    storageSet(TX_KEY, transactions);
+  }
+
+  // Restore manual price overrides from last session
+  const manualPrices = storageGet(PX_KEY, {}) || {};
+  Object.entries(manualPrices).forEach(([sym, px]) => {
+    const h = holdings.find((x) => x.sym === sym);
+    if (h && Number.isFinite(px) && px > 0) { h.px = px; h.isManual = true; anchors.set(sym, px); }
+  });
+
+  const persistManualPrices = () => {
+    const map = {};
+    holdings.forEach((h) => { if (h.isManual) map[h.sym] = h.px; });
+    storageSet(PX_KEY, map);
+  };
+  const persistTx = () => storageSet(TX_KEY, transactions);
 
   // ── Live tick engine ─────────────────────────────────────────────
   // Each security gets a mean-reverting random walk around its anchor px.
@@ -877,6 +919,245 @@
       </li>`).join('');
   }
 
+  // ── Transaction feed / CRUD ──────────────────────────────────────
+  const txModal   = $('#tx-modal');
+  const txForm    = $('#tx-form');
+  const txTitle   = $('#tx-title');
+  const txSubtitle= $('#tx-subtitle');
+  const txIdInput = $('#tx-id');
+  const txDate    = $('#tx-date');
+  const txType    = $('#tx-type');
+  const txSymbol  = $('#tx-symbol');
+  const txQty     = $('#tx-qty');
+  const txPrice   = $('#tx-price');
+  const txFee     = $('#tx-fee');
+  const txCcy     = $('#tx-ccy');
+  const txBroker  = $('#tx-broker');
+  const txNotes   = $('#tx-notes');
+  const txStatus  = $('#tx-status');
+  const txDelete  = $('#tx-delete');
+  const txSymbolsList = $('#tx-symbols');
+
+  // Populate the symbol datalist with the current book + common FX pairs
+  if (txSymbolsList) {
+    const symbolHints = [
+      ...holdings.map((h) => h.sym),
+      'META','AMZN','GOOG','UNH','JNJ','V','MA','KO','PEP','SAP','ROG','NOVN','BABA','TSM',
+      'CHFUSD','EURUSD','GBPUSD','USDJPY','USDSGD',
+      'CARLYLE8','BXP10','SEQUOIA4',
+    ];
+    txSymbolsList.innerHTML = [...new Set(symbolHints)].map((s) => `<option value="${s}"></option>`).join('');
+  }
+
+  const fmtDateShort = (iso) => {
+    const d = new Date(iso + 'T00:00:00');
+    return isNaN(+d) ? iso : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  };
+  const fmtDateLong = (iso) => {
+    const d = new Date(iso + 'T00:00:00');
+    return isNaN(+d) ? iso : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+  const dotClassFor = (type) => ({ BUY: 'up', SELL: 'down' }[type] || '');
+  const describeTx = (t) => {
+    const n = (v, f = 2) => Number.isFinite(+v) ? (+v).toLocaleString('en-US', { minimumFractionDigits: f, maximumFractionDigits: f }) : v;
+    switch (t.type) {
+      case 'BUY':  return `Bought ${n(t.qty, 0)} ${t.symbol} @ ${t.ccy} ${n(t.price)}`;
+      case 'SELL': return `Sold ${n(t.qty, 0)} ${t.symbol} @ ${t.ccy} ${n(t.price)}`;
+      case 'DIV':  return `Dividend · ${t.symbol}${t.price ? ` ${t.ccy} ${n(t.price, 0)}` : ''}`;
+      case 'CPN':  return `Coupon · ${t.symbol}${t.price ? ` ${t.ccy} ${n(t.price, 2)}` : ''}`;
+      case 'CALL': return `Capital call · ${t.symbol} ${t.ccy} ${n(t.price, 0)}`;
+      case 'FX':   return `${t.symbol} ${n(t.qty, 0)} @ ${n(t.price, 4)}`;
+      case 'TRF':  return `Transfer · ${t.symbol} ${n(t.qty, 0)}`;
+      default:     return `${t.type} · ${t.symbol}`;
+    }
+  };
+  const txMeta = (t) => [t.broker, fmtDateLong(t.date), t.notes].filter(Boolean).join(' · ');
+
+  const feedEl  = $('#feed');
+  const txCount = $('#tx-count');
+  const txLast  = $('#tx-last');
+
+  const renderFeed = () => {
+    if (!feedEl) return;
+    if (!transactions.length) {
+      feedEl.innerHTML = `<li class="empty"><span class="big">No transactions yet</span><span>Use <strong>+ New</strong> to record a trade, dividend or capital event.</span></li>`;
+    } else {
+      const sorted = transactions.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.id || '').localeCompare(a.id || ''));
+      feedEl.innerHTML = sorted.map((t) => `
+        <li data-id="${t.id}">
+          <span class="feed__dot ${dotClassFor(t.type)}">${t.type}</span>
+          <div>
+            <strong>${describeTx(t)}</strong>
+            <span class="muted">${txMeta(t)}</span>
+          </div>
+        </li>`).join('');
+    }
+    txCount.textContent = transactions.length;
+    txLast.textContent  = transactions.length ? fmtDateLong(transactions.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0].date) : 'never';
+  };
+
+  feedEl?.addEventListener('click', (e) => {
+    const li = e.target.closest('li[data-id]');
+    if (!li) return;
+    openTxModal(li.dataset.id);
+  });
+
+  const openTxModal = (id = null) => {
+    txForm.reset();
+    if (id) {
+      const t = transactions.find((x) => x.id === id);
+      if (!t) return;
+      txTitle.textContent = 'Edit transaction';
+      txSubtitle.textContent = `Transaction ${t.id}`;
+      txIdInput.value  = t.id;
+      txDate.value     = t.date || '';
+      txType.value     = t.type || 'BUY';
+      txSymbol.value   = t.symbol || '';
+      txQty.value      = t.qty ?? '';
+      txPrice.value    = t.price ?? '';
+      txFee.value      = t.fee ?? '';
+      txCcy.value      = t.ccy || 'USD';
+      txBroker.value   = t.broker || '';
+      txNotes.value    = t.notes || '';
+      txDelete.hidden  = false;
+    } else {
+      txTitle.textContent = 'New transaction';
+      txSubtitle.textContent = 'Record a buy, sell, dividend, FX or capital event';
+      txIdInput.value = '';
+      txDate.value    = new Date().toISOString().slice(0, 10);
+      txType.value    = 'BUY';
+      txCcy.value     = 'USD';
+      txDelete.hidden = true;
+    }
+    txStatus.className = 'modal__status muted';
+    txStatus.textContent = 'Fills Notional = Qty × Price − Fee · all figures can be edited later.';
+    txModal.hidden = false;
+    setTimeout(() => txSymbol.focus(), 60);
+  };
+  const closeTxModal = () => { txModal.hidden = true };
+
+  $('#tx-new')?.addEventListener('click', () => openTxModal(null));
+  txModal?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', closeTxModal));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && txModal && !txModal.hidden) closeTxModal();
+  });
+
+  // Apply a transaction's effect to the positions book.
+  // For un-booked symbols (e.g. META, TSM) we only record the transaction —
+  // we don't silently create a new holding row unless it's a BUY on a known
+  // symbol, which keeps the book consistent.
+  const applyToBook = (t) => {
+    const h = holdings.find((x) => x.sym === t.symbol);
+    if (!h) return;
+    const qty = +t.qty || 0;
+    const px  = +t.price || 0;
+    const fee = +t.fee || 0;
+    if (t.type === 'BUY' && qty > 0) {
+      const oldNotional = h.qty * h.cost;
+      const newNotional = oldNotional + qty * px + fee;
+      h.qty  = h.qty + qty;
+      h.cost = h.qty > 0 ? newNotional / h.qty : h.cost;
+    } else if (t.type === 'SELL' && qty > 0) {
+      h.qty = Math.max(0, h.qty - qty);
+    }
+    // Dividends, coupons, capital calls don't change qty/cost here;
+    // they'd flow through the cash ledger in a real system.
+  };
+
+  txForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = {
+      id:      txIdInput.value || ('t-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7)),
+      date:    txDate.value,
+      type:    txType.value,
+      symbol:  (txSymbol.value || '').trim().toUpperCase(),
+      qty:     txQty.value === '' ? 0 : +txQty.value,
+      price:   txPrice.value === '' ? 0 : +txPrice.value,
+      fee:     txFee.value === '' ? 0 : +txFee.value,
+      ccy:     txCcy.value,
+      broker:  txBroker.value.trim(),
+      notes:   txNotes.value.trim(),
+    };
+    if (!data.date) { txStatus.className = 'modal__status err'; txStatus.textContent = 'Please pick a date.'; return; }
+    if (!data.symbol) { txStatus.className = 'modal__status err'; txStatus.textContent = 'Please enter a symbol.'; return; }
+
+    const existingIdx = transactions.findIndex((x) => x.id === data.id);
+    const isEdit = existingIdx >= 0;
+    if (isEdit) transactions[existingIdx] = data;
+    else        transactions.push(data);
+
+    persistTx();
+    // Only apply the book-level effect on create; editing a past trade
+    // shouldn't double-count against qty/cost. Users can adjust the book
+    // directly through inline price edits or a reversing transaction.
+    if (!isEdit) applyToBook(data);
+    renderFeed();
+    renderHoldings();
+    applyRowTags();
+    recomputeAnalytics();
+    liveTick();
+
+    txStatus.className = 'modal__status ok';
+    txStatus.textContent = isEdit ? 'Transaction updated.' : 'Transaction saved.';
+    setTimeout(closeTxModal, 500);
+  });
+
+  txDelete?.addEventListener('click', () => {
+    const id = txIdInput.value;
+    if (!id) return;
+    if (!confirm('Delete this transaction? This cannot be undone.')) return;
+    transactions = transactions.filter((x) => x.id !== id);
+    persistTx();
+    renderFeed();
+    closeTxModal();
+  });
+
+  // ── Import / Export JSON ─────────────────────────────────────────
+  $('#tx-export')?.addEventListener('click', () => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      source: 'Ashford & Vere Dashboard',
+      transactions,
+      manualPrices,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `av-transactions-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 250);
+  });
+
+  $('#tx-import')?.addEventListener('click', () => $('#tx-import-file').click());
+  $('#tx-import-file')?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        const incoming = Array.isArray(parsed) ? parsed : parsed.transactions;
+        if (!Array.isArray(incoming)) throw new Error('No transactions array found.');
+        if (!confirm(`Import ${incoming.length} transactions? This will merge with the ${transactions.length} already saved.`)) return;
+        // Merge by id; imported rows overwrite duplicates.
+        const byId = new Map(transactions.map((t) => [t.id, t]));
+        incoming.forEach((t) => { if (t && t.id) byId.set(t.id, t); });
+        transactions = Array.from(byId.values());
+        persistTx();
+        // Optional: replay BUY/SELL effects on the book? We don't re-apply on
+        // import to avoid double-counting seeded positions; the user can
+        // reset prices + edit holdings manually if needed.
+        renderFeed();
+      } catch (err) {
+        alert('Could not read JSON file: ' + err.message);
+      } finally {
+        e.target.value = '';
+      }
+    };
+    reader.readAsText(file);
+  });
+
   // ── Theme toggle ────────────────────────────────────────────────
   const themeBtn = $('#theme-toggle');
   const savedTheme = localStorage.getItem('av-theme');
@@ -891,6 +1172,7 @@
     renderDonut();
   });
   // Run one tick immediately so % figures align with live state
+  renderFeed();
   recomputeAnalytics();
   liveTick();
   setInterval(liveTick, 1600);
