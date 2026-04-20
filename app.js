@@ -32,6 +32,123 @@
   const fmtDelta = (n) => (n >= 0 ? '▲ ' : '▼ ') + fmtUSD(Math.abs(n));
   const signCls = (n) => (n >= 0 ? 'up' : 'down');
 
+  // ── Investable universe ──────────────────────────────────────────
+  // Covers equities, ETFs, crypto, FX, commodities, fixed income. Each
+  // row supplies the sensitivity the risk engine needs (beta, duration,
+  // fx, gold) so any BUY on one of these tickers creates a position
+  // with correct defaults. Prices are indicative for seeding only.
+  const universe = [
+    // US mega-cap equities
+    { sym: 'NVDA',  name: 'NVIDIA Corp.',           type: 'Equity · US',    px: 892.40, beta: 1.55, dur: 0, fx: 0, gold: 0 },
+    { sym: 'MSFT',  name: 'Microsoft Corp.',        type: 'Equity · US',    px: 422.75, beta: 1.05, dur: 0, fx: 0, gold: 0 },
+    { sym: 'AAPL',  name: 'Apple Inc.',             type: 'Equity · US',    px: 208.90, beta: 1.20, dur: 0, fx: 0, gold: 0 },
+    { sym: 'AMZN',  name: 'Amazon.com',             type: 'Equity · US',    px: 192.40, beta: 1.25, dur: 0, fx: 0, gold: 0 },
+    { sym: 'GOOG',  name: 'Alphabet (Class C)',     type: 'Equity · US',    px: 178.10, beta: 1.10, dur: 0, fx: 0, gold: 0 },
+    { sym: 'GOOGL', name: 'Alphabet (Class A)',     type: 'Equity · US',    px: 177.30, beta: 1.10, dur: 0, fx: 0, gold: 0 },
+    { sym: 'META',  name: 'Meta Platforms',         type: 'Equity · US',    px: 512.10, beta: 1.30, dur: 0, fx: 0, gold: 0 },
+    { sym: 'TSLA',  name: 'Tesla Inc.',             type: 'Equity · US',    px: 174.60, beta: 1.95, dur: 0, fx: 0, gold: 0 },
+    { sym: 'BRK.B', name: 'Berkshire Hathaway B',   type: 'Equity · US',    px: 408.30, beta: 0.85, dur: 0, fx: 0, gold: 0 },
+    { sym: 'JPM',   name: 'JPMorgan Chase',         type: 'Equity · US',    px: 198.40, beta: 1.10, dur: 0, fx: 0, gold: 0 },
+    { sym: 'V',     name: 'Visa',                   type: 'Equity · US',    px: 284.60, beta: 0.95, dur: 0, fx: 0, gold: 0 },
+    { sym: 'MA',    name: 'Mastercard',             type: 'Equity · US',    px: 462.10, beta: 1.00, dur: 0, fx: 0, gold: 0 },
+    { sym: 'UNH',   name: 'UnitedHealth',           type: 'Equity · US',    px: 489.20, beta: 0.70, dur: 0, fx: 0, gold: 0 },
+    { sym: 'JNJ',   name: 'Johnson & Johnson',      type: 'Equity · US',    px: 152.80, beta: 0.55, dur: 0, fx: 0, gold: 0 },
+    { sym: 'LLY',   name: 'Eli Lilly',              type: 'Equity · US',    px: 742.30, beta: 0.70, dur: 0, fx: 0, gold: 0 },
+    { sym: 'XOM',   name: 'Exxon Mobil',            type: 'Equity · US',    px: 115.40, beta: 1.05, dur: 0, fx: 0, gold: 0 },
+    { sym: 'WMT',   name: 'Walmart',                type: 'Equity · US',    px:  68.30, beta: 0.55, dur: 0, fx: 0, gold: 0 },
+    { sym: 'KO',    name: 'Coca-Cola',              type: 'Equity · US',    px:  62.40, beta: 0.55, dur: 0, fx: 0, gold: 0 },
+    { sym: 'PEP',   name: 'PepsiCo',                type: 'Equity · US',    px: 172.80, beta: 0.60, dur: 0, fx: 0, gold: 0 },
+    { sym: 'DIS',   name: 'Walt Disney',            type: 'Equity · US',    px:  96.20, beta: 1.15, dur: 0, fx: 0, gold: 0 },
+    { sym: 'NFLX',  name: 'Netflix',                type: 'Equity · US',    px: 642.10, beta: 1.20, dur: 0, fx: 0, gold: 0 },
+    { sym: 'COST',  name: 'Costco Wholesale',       type: 'Equity · US',    px: 812.40, beta: 0.80, dur: 0, fx: 0, gold: 0 },
+    { sym: 'HD',    name: 'Home Depot',             type: 'Equity · US',    px: 340.10, beta: 1.00, dur: 0, fx: 0, gold: 0 },
+    { sym: 'AMD',   name: 'Advanced Micro Devices', type: 'Equity · US',    px: 160.40, beta: 1.65, dur: 0, fx: 0, gold: 0 },
+    { sym: 'INTC',  name: 'Intel Corp.',            type: 'Equity · US',    px:  32.40, beta: 1.30, dur: 0, fx: 0, gold: 0 },
+    { sym: 'CRM',   name: 'Salesforce',             type: 'Equity · US',    px: 272.60, beta: 1.25, dur: 0, fx: 0, gold: 0 },
+    { sym: 'ORCL',  name: 'Oracle',                 type: 'Equity · US',    px: 142.50, beta: 1.00, dur: 0, fx: 0, gold: 0 },
+    { sym: 'UBER',  name: 'Uber Technologies',      type: 'Equity · US',    px:  72.10, beta: 1.35, dur: 0, fx: 0, gold: 0 },
+    { sym: 'PLTR',  name: 'Palantir',               type: 'Equity · US',    px:  24.80, beta: 1.70, dur: 0, fx: 0, gold: 0 },
+    // International equities
+    { sym: 'ASML',  name: 'ASML Holding',           type: 'Equity · NL',    px: 910.20, beta: 1.40, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'LVMH',  name: 'LVMH Moët Hennessy',     type: 'Equity · FR',    px: 748.40, beta: 0.90, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'NESN',  name: 'Nestlé',                 type: 'Equity · CH',    px: 104.12, beta: 0.55, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'ROG',   name: 'Roche Holding',          type: 'Equity · CH',    px: 262.40, beta: 0.50, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'NOVN',  name: 'Novartis',               type: 'Equity · CH',    px:  94.10, beta: 0.55, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'SAP',   name: 'SAP SE',                 type: 'Equity · DE',    px: 212.40, beta: 1.00, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'SIE',   name: 'Siemens AG',             type: 'Equity · DE',    px: 181.20, beta: 1.10, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'AZN',   name: 'AstraZeneca',            type: 'Equity · UK',    px: 126.40, beta: 0.55, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'SHEL',  name: 'Shell plc',              type: 'Equity · UK',    px:  35.20, beta: 1.00, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'HSBA',  name: 'HSBC',                   type: 'Equity · UK',    px:   8.90, beta: 1.00, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'TSM',   name: 'Taiwan Semiconductor',   type: 'Equity · TW',    px: 168.20, beta: 1.30, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'BABA',  name: 'Alibaba Group',          type: 'Equity · HK',    px:  78.20, beta: 1.30, dur: 0, fx: 1,   gold: 0 },
+    { sym: '7203',  name: 'Toyota Motor',           type: 'Equity · JP',    px: 2840,   beta: 0.85, dur: 0, fx: 1,   gold: 0 },
+    { sym: '9984',  name: 'SoftBank Group',         type: 'Equity · JP',    px: 9720,   beta: 1.40, dur: 0, fx: 1,   gold: 0 },
+    // Equity ETFs
+    { sym: 'SPY',   name: 'SPDR S&P 500 ETF',       type: 'ETF · Equity',   px: 528.40, beta: 1.00, dur: 0, fx: 0, gold: 0 },
+    { sym: 'VOO',   name: 'Vanguard S&P 500 ETF',   type: 'ETF · Equity',   px: 485.20, beta: 1.00, dur: 0, fx: 0, gold: 0 },
+    { sym: 'VTI',   name: 'Vanguard Total Market',  type: 'ETF · Equity',   px: 262.10, beta: 1.00, dur: 0, fx: 0, gold: 0 },
+    { sym: 'QQQ',   name: 'Invesco Nasdaq-100 ETF', type: 'ETF · Equity',   px: 456.80, beta: 1.20, dur: 0, fx: 0, gold: 0 },
+    { sym: 'IWM',   name: 'iShares Russell 2000',   type: 'ETF · Equity',   px: 218.30, beta: 1.15, dur: 0, fx: 0, gold: 0 },
+    { sym: 'DIA',   name: 'SPDR Dow Jones',         type: 'ETF · Equity',   px: 392.60, beta: 0.95, dur: 0, fx: 0, gold: 0 },
+    { sym: 'EFA',   name: 'iShares MSCI EAFE',      type: 'ETF · Int\'l',   px:  81.30, beta: 0.90, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'EEM',   name: 'iShares MSCI EM',        type: 'ETF · EM',       px:  45.20, beta: 1.05, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'VEA',   name: 'Vanguard Developed',     type: 'ETF · Int\'l',   px:  52.40, beta: 0.90, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'VWO',   name: 'Vanguard Emerging',      type: 'ETF · EM',       px:  45.80, beta: 1.05, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'ACWI',  name: 'iShares MSCI ACWI',      type: 'ETF · Global',   px: 115.20, beta: 0.95, dur: 0, fx: 0.4, gold: 0 },
+    // Fixed-income ETFs
+    { sym: 'AGG',   name: 'iShares Core US Agg',    type: 'ETF · Bonds',    px:  99.40, beta: 0,    dur: 6.2, fx: 0, gold: 0 },
+    { sym: 'BND',   name: 'Vanguard Total Bond',    type: 'ETF · Bonds',    px:  73.10, beta: 0,    dur: 6.4, fx: 0, gold: 0 },
+    { sym: 'TLT',   name: '20+ Year Treasury',      type: 'ETF · Bonds',    px:  92.40, beta: 0,    dur: 17.5,fx: 0, gold: 0 },
+    { sym: 'IEF',   name: '7-10 Year Treasury',     type: 'ETF · Bonds',    px:  96.10, beta: 0,    dur: 7.8, fx: 0, gold: 0 },
+    { sym: 'SHY',   name: '1-3 Year Treasury',      type: 'ETF · Bonds',    px:  82.40, beta: 0,    dur: 1.9, fx: 0, gold: 0 },
+    { sym: 'LQD',   name: 'IG Corporate Bond ETF',  type: 'ETF · Bonds',    px: 108.20, beta: 0.05, dur: 8.5, fx: 0, gold: 0 },
+    { sym: 'HYG',   name: 'High Yield Bond ETF',    type: 'ETF · Bonds',    px:  77.80, beta: 0.25, dur: 3.8, fx: 0, gold: 0 },
+    { sym: 'TIP',   name: 'TIPS Bond ETF',          type: 'ETF · Bonds',    px: 108.60, beta: 0,    dur: 6.8, fx: 0, gold: 0 },
+    { sym: 'EMB',   name: 'EM USD Bond ETF',        type: 'ETF · Bonds',    px:  89.20, beta: 0.15, dur: 7.2, fx: 0, gold: 0 },
+    // Real assets / commodities
+    { sym: 'GLD',   name: 'SPDR Gold Shares',       type: 'Commodity',      px: 234.20, beta: 0.1,  dur: 0, fx: 0.3, gold: 1 },
+    { sym: 'IAU',   name: 'iShares Gold Trust',     type: 'Commodity',      px:  47.60, beta: 0.1,  dur: 0, fx: 0.3, gold: 1 },
+    { sym: 'SLV',   name: 'iShares Silver Trust',   type: 'Commodity',      px:  27.80, beta: 0.25, dur: 0, fx: 0.2, gold: 0.6 },
+    { sym: 'USO',   name: 'US Oil Fund',            type: 'Commodity',      px:  78.20, beta: 0.85, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'UNG',   name: 'US Natural Gas Fund',    type: 'Commodity',      px:  15.40, beta: 0.70, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'DBA',   name: 'DB Agriculture Fund',    type: 'Commodity',      px:  22.80, beta: 0.30, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'COPX',  name: 'Global Copper Miners',   type: 'Commodity',      px:  46.40, beta: 1.30, dur: 0, fx: 0,   gold: 0 },
+    // REITs
+    { sym: 'VNQ',   name: 'Vanguard Real Estate',   type: 'REIT',           px:  88.40, beta: 0.90, dur: 2.5, fx: 0, gold: 0 },
+    { sym: 'O',     name: 'Realty Income',          type: 'REIT',           px:  54.20, beta: 0.65, dur: 3.5, fx: 0, gold: 0 },
+    { sym: 'PLD',   name: 'Prologis',               type: 'REIT',           px: 108.20, beta: 1.00, dur: 2.5, fx: 0, gold: 0 },
+    // Cash-like / money market
+    { sym: 'BIL',   name: '1-3 Month Treasury',     type: 'Cash',           px:  91.60, beta: 0,    dur: 0.1, fx: 0, gold: 0 },
+    { sym: 'SGOV',  name: '0-3 Month Treasury',     type: 'Cash',           px: 100.30, beta: 0,    dur: 0.1, fx: 0, gold: 0 },
+    // Crypto
+    { sym: 'BTC',   name: 'Bitcoin',                type: 'Crypto',         px: 71248,  beta: 1.10, dur: 0, fx: 0,   gold: 0.25 },
+    { sym: 'ETH',   name: 'Ethereum',               type: 'Crypto',         px: 3720,   beta: 1.40, dur: 0, fx: 0,   gold: 0.15 },
+    { sym: 'SOL',   name: 'Solana',                 type: 'Crypto',         px: 182.40, beta: 1.90, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'XRP',   name: 'XRP',                    type: 'Crypto',         px:   0.62, beta: 1.60, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'ADA',   name: 'Cardano',                type: 'Crypto',         px:   0.46, beta: 1.70, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'AVAX',  name: 'Avalanche',              type: 'Crypto',         px:  38.20, beta: 2.05, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'DOT',   name: 'Polkadot',               type: 'Crypto',         px:   7.20, beta: 1.80, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'LINK',  name: 'Chainlink',              type: 'Crypto',         px:  16.40, beta: 1.75, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'MATIC', name: 'Polygon',                type: 'Crypto',         px:   0.72, beta: 1.80, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'DOGE',  name: 'Dogecoin',               type: 'Crypto',         px:   0.14, beta: 2.10, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'LTC',   name: 'Litecoin',               type: 'Crypto',         px:  84.20, beta: 1.30, dur: 0, fx: 0,   gold: 0.1 },
+    { sym: 'BCH',   name: 'Bitcoin Cash',           type: 'Crypto',         px: 412.60, beta: 1.30, dur: 0, fx: 0,   gold: 0.1 },
+    { sym: 'UNI',   name: 'Uniswap',                type: 'Crypto',         px:   8.40, beta: 1.80, dur: 0, fx: 0,   gold: 0 },
+    // Crypto-proxy equities / ETFs
+    { sym: 'IBIT',  name: 'iShares Bitcoin Trust',  type: 'Crypto ETF',     px:  42.80, beta: 1.10, dur: 0, fx: 0,   gold: 0.25 },
+    { sym: 'FBTC',  name: 'Fidelity Bitcoin',       type: 'Crypto ETF',     px:  65.40, beta: 1.10, dur: 0, fx: 0,   gold: 0.25 },
+    { sym: 'COIN',  name: 'Coinbase Global',        type: 'Equity · Crypto',px: 212.40, beta: 2.20, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'MSTR',  name: 'MicroStrategy',          type: 'Equity · Crypto',px: 1640,   beta: 2.60, dur: 0, fx: 0,   gold: 0 },
+    // FX crosses (quoted as base→USD)
+    { sym: 'EURUSD',name: 'Euro vs USD',            type: 'FX',             px:   1.08, beta: 0,    dur: 0, fx: 1,   gold: 0 },
+    { sym: 'CHFUSD',name: 'Swiss Franc vs USD',     type: 'FX',             px:   1.10, beta: 0,    dur: 0, fx: 1,   gold: 0 },
+    { sym: 'GBPUSD',name: 'Sterling vs USD',        type: 'FX',             px:   1.26, beta: 0,    dur: 0, fx: 1,   gold: 0 },
+    { sym: 'USDJPY',name: 'Dollar vs Yen',          type: 'FX',             px: 154.20, beta: 0,    dur: 0, fx: 1,   gold: 0 },
+    { sym: 'USDSGD',name: 'Dollar vs Sing. Dollar', type: 'FX',             px:   1.34, beta: 0,    dur: 0, fx: 1,   gold: 0 },
+    { sym: 'USDCNH',name: 'Dollar vs Offshore Yuan',type: 'FX',             px:   7.22, beta: 0,    dur: 0, fx: 1,   gold: 0 },
+  ];
+  const universeBySym = new Map(universe.map((u) => [u.sym, u]));
+
   // ── Seed data: holdings ───────────────────────────────────────────
   // sensitivities: beta (to equity market), dur (bond duration years),
   // fx (fraction of non-USD exposure), gold (1 if physical gold).
@@ -54,6 +171,8 @@
     { sym: 'SX5E', name: 'Euro Stoxx 50',       px: 5010.44, pct:  0.22 },
     { sym: 'NKY',  name: 'Nikkei 225',          px: 39412.7, pct: -0.18 },
     { sym: 'BTC',  name: 'Bitcoin · USD',       px: 71248.0, pct:  1.42 },
+    { sym: 'ETH',  name: 'Ethereum · USD',      px:  3720.0, pct:  2.18 },
+    { sym: 'SOL',  name: 'Solana · USD',        px:   182.4, pct:  3.04 },
     { sym: 'GOLD', name: 'Gold Spot · oz',      px: 2342.10, pct:  0.64 },
     { sym: 'CL',   name: 'WTI Crude · bbl',     px:   83.12, pct: -0.44 },
     { sym: 'DXY',  name: 'US Dollar Index',     px:  104.21, pct: -0.08 },
@@ -987,15 +1106,22 @@
   const txDelete  = $('#tx-delete');
   const txSymbolsList = $('#tx-symbols');
 
-  // Populate the symbol datalist with the current book + common FX pairs
+  // Populate the symbol datalist with the investable universe + current
+  // book + watchlist + private-markets references so typing a few
+  // letters surfaces the right ticker no matter the asset class.
   if (txSymbolsList) {
-    const symbolHints = [
-      ...holdings.map((h) => h.sym),
-      'META','AMZN','GOOG','UNH','JNJ','V','MA','KO','PEP','SAP','ROG','NOVN','BABA','TSM',
-      'CHFUSD','EURUSD','GBPUSD','USDJPY','USDSGD',
-      'CARLYLE8','BXP10','SEQUOIA4',
-    ];
-    txSymbolsList.innerHTML = [...new Set(symbolHints)].map((s) => `<option value="${s}"></option>`).join('');
+    const symbolSeen = new Set();
+    const rows = [];
+    const push = (sym, label) => {
+      if (!sym || symbolSeen.has(sym)) return;
+      symbolSeen.add(sym);
+      rows.push(`<option value="${sym}"${label ? ` label="${label}"` : ''}></option>`);
+    };
+    holdings.forEach((h) => push(h.sym, h.name));
+    universe.forEach((u) => push(u.sym, `${u.name} · ${u.type}`));
+    // Private-market and capital-call references
+    ['CARLYLE8','BXP10','SEQUOIA4'].forEach((s) => push(s));
+    txSymbolsList.innerHTML = rows.join('');
   }
 
   const fmtDateShort = (iso) => {
@@ -1146,12 +1272,16 @@
     let h = holdings.find((x) => x.sym === t.symbol);
 
     if (!h && t.type === 'BUY' && qty > 0 && px > 0) {
+      const u = universeBySym.get(t.symbol);
       h = {
         sym: t.symbol,
-        name: t.symbol,
-        sector: 'Custom',
+        name: u?.name || t.symbol,
+        sector: u?.type || 'Custom',
         qty: 0, cost: px, px,
-        beta: 1, dur: 0, fx: 0, gold: 0,
+        beta: u?.beta ?? 1,
+        dur:  u?.dur  ?? 0,
+        fx:   u?.fx   ?? 0,
+        gold: u?.gold ?? 0,
       };
       holdings.push(h);
       anchors.set(h.sym, h.px);
@@ -1504,6 +1634,21 @@
       meta: `Last ${fmtNum(w.px, 2)}`,
       act: () => scrollToSection('watchlist-card'),
     }));
+    // Investable universe — typing "Bitcoin" or "S&P" finds the right
+    // row and opens a pre-filled BUY ticket at the universe price.
+    const heldSet = new Set(holdings.map((h) => h.sym));
+    universe.forEach((u) => {
+      if (heldSet.has(u.sym)) return; // already under Holding
+      out.push({
+        kind: 'trade',
+        sym: u.sym,
+        label: `Buy ${u.sym} · ${u.name}`,
+        group: u.type,
+        k: u.sym.slice(0, 3),
+        meta: `Indicative ${fmtNum(u.px, u.px < 10 ? 4 : 2)}`,
+        act: () => prefillTxModal({ symbol: u.sym, price: u.px, type: 'BUY' }),
+      });
+    });
     return out;
   };
 
