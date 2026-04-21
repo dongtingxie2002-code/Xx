@@ -188,26 +188,6 @@ input{font:inherit; color:inherit}
 
 .nav__item .dot--live{ margin-left: auto }
 
-/* Advisor card ---------------------------------------------------- */
-.card--advisor{
-  padding: 14px;
-  display: flex; gap: 12px; align-items: flex-start;
-  background:
-    linear-gradient(180deg, rgba(200,168,107,.08), rgba(200,168,107,0)),
-    var(--bg-2);
-}
-.advisor__avatar{
-  width: 40px; height: 40px; border-radius: 50%;
-  display: grid; place-items: center;
-  background: linear-gradient(145deg, var(--gold-soft), var(--gold-deep));
-  color: #1b1510; font-weight: 700; letter-spacing: .02em;
-  font-family: var(--font-serif);
-  flex: 0 0 auto;
-}
-.advisor__body{ display: flex; flex-direction: column; gap: 2px; font-size: 12.5px }
-.advisor__body strong{ font-family: var(--font-serif); font-size: 15px; font-weight: 500 }
-.advisor__row{ display: flex; gap: 6px; margin-top: 8px }
-
 /* Topbar bits ----------------------------------------------------- */
 .breadcrumb{ display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 13px }
 .breadcrumb strong{ color: var(--ink-0); font-weight: 600 }
@@ -1356,7 +1336,6 @@ body[data-theme="day"][data-design="clinical"] .risk-kpi strong,
 body[data-theme="day"][data-design="clinical"] .events .date .d,
 body[data-theme="day"][data-design="clinical"] .ticker__sym,
 body[data-theme="day"][data-design="clinical"] .watch .sym,
-body[data-theme="day"][data-design="clinical"] .advisor__avatar,
 body[data-theme="day"][data-design="clinical"] .user__avatar,
 body[data-theme="day"][data-design="clinical"] .heat-tile .sym{
   font-family: "Inter", -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
@@ -1526,6 +1505,150 @@ body[data-theme="day"][data-design="broadsheet"] .card{
 }
 .field.check .lbl .muted{ font-size: 11.5px; line-height: 1.4 }
 
+/* Portfolio switcher --------------------------------------------- */
+.portfolio-switch{ position: relative }
+.portfolio-switch > button{
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  border-radius: 999px;
+  color: var(--ink-0);
+  font-size: 13px;
+}
+.portfolio-switch > button:hover{ background: var(--bg-2) }
+.portfolio-switch > button svg{ opacity: .7 }
+.popover--menu{
+  left: 0; right: auto;
+  width: 260px;
+  padding: 4px;
+}
+.popover--menu ul{ list-style: none; margin: 0; padding: 0 }
+.popover--menu li{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  gap: 8px;
+}
+.popover--menu li:hover{ background: var(--bg-3) }
+.popover--menu li.is-active{
+  background: rgba(200,168,107,.1);
+  color: var(--ink-0);
+}
+.popover--menu li.is-active::before{
+  content: "✓"; color: var(--gold); margin-right: 6px;
+}
+.popover--menu .sub{ color: var(--ink-3); font-size: 11.5px }
+.popover--menu .rm{
+  background: transparent; border: 0; color: var(--ink-3);
+  padding: 2px 6px; border-radius: 4px; cursor: pointer;
+  opacity: 0; transition: opacity .15s;
+}
+.popover--menu li:hover .rm{ opacity: 0.8 }
+.popover--menu .rm:hover{ color: var(--down); background: var(--down-soft) }
+.popover__foot{
+  padding: 6px;
+  border-top: 1px solid var(--line-soft);
+  margin-top: 4px;
+}
+
+/* Profile button in topbar as clickable ------------------------- */
+.user{
+  cursor: pointer;
+  border: 0; background: transparent;
+  padding: 0;
+  text-align: left;
+  font: inherit; color: inherit;
+}
+.user:hover .user__avatar{ filter: brightness(1.05) }
+
+/* Drawer (per-position) ------------------------------------------ */
+.drawer{
+  position: fixed; inset: 0;
+  z-index: 90;
+}
+.drawer[hidden]{ display: none }
+.drawer__backdrop{
+  position: absolute; inset: 0;
+  background: rgba(8,10,14,.45);
+  backdrop-filter: blur(3px);
+  animation: fadeIn .12s ease-out;
+}
+.drawer__panel{
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: min(520px, 92vw);
+  background: var(--bg-2);
+  border-left: 1px solid var(--line);
+  box-shadow: -30px 0 60px -30px rgba(0,0,0,.55);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+  animation: drawerIn .2s cubic-bezier(.2,.7,.2,1);
+}
+@keyframes drawerIn { from { transform: translateX(10%); opacity: .6 } to { transform: none; opacity: 1 } }
+.drawer__head{
+  position: sticky; top: 0; z-index: 2;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  padding: 18px 20px 12px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line-soft);
+}
+.drawer__body{ padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 16px }
+.drawer__kpis{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.drawer__kpi{
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--bg-1);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.drawer__kpi .lbl{
+  font-size: 10.5px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ink-3); font-weight: 600;
+}
+.drawer__kpi strong{
+  font-family: var(--font-serif); font-weight: 500; font-size: 16px;
+  font-variant-numeric: tabular-nums; letter-spacing: -.005em;
+}
+.drawer__section{ display: flex; flex-direction: column; gap: 8px }
+.drawer__section-head{
+  display: flex; justify-content: space-between; align-items: center;
+}
+.drawer-chart{
+  width: 100%; height: 160px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--bg-1);
+  padding: 8px;
+  box-sizing: border-box;
+}
+.drawer__sens{
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+}
+.drawer__sens li{
+  display: flex; justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-1);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.drawer__sens strong{ font-family: var(--font-mono); font-weight: 600 }
+@media (max-width: 860px){
+  .drawer__kpis{ grid-template-columns: repeat(2, 1fr) }
+  .drawer__panel{ width: 100vw }
+  .drawer__sens{ grid-template-columns: 1fr }
+}
+
 /* Toast ----------------------------------------------------------- */
 .toast-wrap{
   position: fixed;
@@ -1594,7 +1717,7 @@ body[data-theme="day"][data-design="broadsheet"] .card{
   .nav__item.is-active::before{ display: none }
   .nav__item .nav__meta,
   .nav__item .dot--live{ display: none }
-  .advisor{ display: none }
+  /* advisor card removed */
   .topbar{ grid-column: 1; padding: 0 16px; height: 56px }
   .main{ grid-column: 1; padding: 16px 14px 56px; gap: 18px }
   .kpi-row{ grid-template-columns: 1fr 1fr; gap: 10px }
@@ -1651,7 +1774,31 @@ body[data-theme="day"][data-design="broadsheet"] .card{
   .tbl td[data-field="px"]:hover{ background: transparent }
   .feed li:hover{ background: transparent }
   .nav__item:hover{ background: transparent }
+  .btn, .icon-btn{ min-height: 40px; padding-top: 9px; padding-bottom: 9px }
+  .btn--sm{ min-height: 34px; padding-top: 7px; padding-bottom: 7px }
+  .watch .remove, .row-remove{ opacity: .7 }
 }
+
+/* Consistent empty states --------------------------------------- */
+.empty-block{
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+.empty-block strong{
+  display: block;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--ink-1);
+  margin-bottom: 4px;
+}
+
+/* Tighten spacing on the four designs for consistency ----------- */
+body[data-theme="day"][data-design="clinical"] .card{ border-radius: 8px }
+body[data-theme="day"][data-design="broadsheet"] .display{ font-style: italic }
+body[data-theme="day"][data-design="broadsheet"] .display em{ font-style: italic }
 
 /* Print styles --------------------------------------------------- */
 @media print{

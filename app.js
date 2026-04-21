@@ -1,4 +1,4 @@
-/* Ashford & Vere — dashboard runtime
+/* Xie Family Office — dashboard runtime
  * - Seeded RNG so the session feels deterministic on load but ticks live.
  * - SVG charts drawn by hand (performance, sparklines, donut).
  * - Live prices drift on a realistic walk; P&L and KPIs recompute.
@@ -14,6 +14,26 @@
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
   const rnd = mulberry32(4242);
+
+  // ── Portfolio namespace ──────────────────────────────────────────
+  // Storage keys are prefixed with the active portfolio so books don't
+  // mix. The "default" portfolio keeps legacy keys so existing users
+  // don't lose anything.
+  const PORTFOLIOS_KEY = 'av-portfolios-v1';
+  const ACTIVE_KEY     = 'av-active-portfolio-v1';
+  const urlP = new URLSearchParams(location.search).get('p');
+  let portfolios = (() => {
+    try { const v = JSON.parse(localStorage.getItem(PORTFOLIOS_KEY)); if (Array.isArray(v)) return v; } catch {}
+    return null;
+  })();
+  if (!portfolios || !portfolios.length) {
+    portfolios = [{ id: 'default', name: 'Consolidated' }];
+    localStorage.setItem(PORTFOLIOS_KEY, JSON.stringify(portfolios));
+  }
+  let activePortfolioId = urlP || localStorage.getItem(ACTIVE_KEY) || 'default';
+  if (!portfolios.find((p) => p.id === activePortfolioId)) activePortfolioId = portfolios[0].id;
+  localStorage.setItem(ACTIVE_KEY, activePortfolioId);
+  const kp = activePortfolioId === 'default' ? '' : `p-${activePortfolioId}-`;
 
   // ── Formatters ────────────────────────────────────────────────────
   // Locale and base currency are read at call time so a preferences
@@ -203,7 +223,7 @@
     { d: 28, m: 'Apr', tag: 'DIV',  cls: 'div',  label: 'Ex‑dividend · Nestlé',                         meta: 'CHF 3.00 per share · payable 06 May' },
     { d: 30, m: 'Apr', tag: 'CALL', cls: 'call', label: 'Capital call · Blackstone RE Partners X',      meta: 'Wire $1.1M · confirm IRS W‑8' },
     { d:  2, m: 'May', tag: 'MAT',  cls: 'mat',  label: 'Bond maturity · UBS Subordinated 3.5% 2026',   meta: 'Redemption $2.0M · redeploy?' },
-    { d:  5, m: 'May', tag: 'RV',   cls: '',     label: 'Rebalance review with Eleanor Marchetti',      meta: '14:00 GMT+2 · Geneva office' },
+    { d:  5, m: 'May', tag: 'RV',   cls: '',     label: 'Quarterly portfolio review',                   meta: 'Consolidated rebalance walk-through' },
   ];
 
   // Geographic + currency exposure (look-through)
@@ -500,11 +520,14 @@
   };
 
   // ── Performance chart interactivity ──────────────────────────────
-  const baseDate = new Date(2026, 0, 2); // trading days start 2 Jan
   const dayLabel = (i) => {
-    const d = new Date(baseDate);
-    d.setDate(d.getDate() + Math.round(i * 1.45)); // sparse trading-day feel
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    if (perfSeries.labels && perfSeries.labels[i]) {
+      const d = new Date(perfSeries.labels[i] + 'T00:00:00');
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
+    }
+    const base = new Date();
+    base.setDate(base.getDate() - (80 - i) * 1.45);
+    return base.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
   };
 
   const onPerfMove = (ev) => {
@@ -817,14 +840,14 @@
   });
 
   // ── Private Markets & Cash stores ───────────────────────────────
-  const PM_KEY   = 'av-pm-v1';
-  const CASH_KEY = 'av-cash-v1';
+  const PM_KEY   = `av-${kp}pm-v1`;
+  const CASH_KEY = `av-${kp}cash-v1`;
   const PREF_KEY = 'av-prefs-v1';
   const seedPM = [
     { id: 'pm-1', name: 'Sequoia Capital Global Growth IV',  strategy: 'Venture',     vintage: 2022, committed: 20, called: 15, distributed: 0,   nav: 14.8, metric: 'TVPI 1.61×' },
     { id: 'pm-2', name: 'Blackstone Real Estate Partners X', strategy: 'Real Estate', vintage: 2023, committed: 14, called: 9,  distributed: 2.2, nav: 9.2,  metric: 'DPI 0.24×' },
     { id: 'pm-3', name: 'Carlyle Partners VIII',             strategy: 'Buyout',      vintage: 2021, committed: 15, called: 11, distributed: 4.8, nav: 11.4, metric: 'IRR 18.2%' },
-    { id: 'pm-4', name: 'Ashford Art & Collectibles Vehicle',strategy: 'Collectibles',vintage: 2020, committed: 8,  called: 6,  distributed: 0,   nav: 7.9,  metric: 'Mark 1.09×' },
+    { id: 'pm-4', name: 'Xie Art & Collectibles Vehicle',    strategy: 'Collectibles',vintage: 2020, committed: 8,  called: 6,  distributed: 0,   nav: 7.9,  metric: 'Mark 1.09×' },
   ];
   const seedCash = [
     { id: 'c-1', ccy: 'USD', bal: 18402117, bank: 'JPM Private Bank' },
@@ -836,8 +859,8 @@
   ];
 
   // ── Transaction store (persisted to localStorage) ────────────────
-  const TX_KEY = 'av-transactions-v1';
-  const PX_KEY = 'av-manual-prices-v1';
+  const TX_KEY = `av-${kp}transactions-v1`;
+  const PX_KEY = `av-${kp}manual-prices-v1`;
   const storageGet = (k, fallback) => {
     try {
       const raw = localStorage.getItem(k);
@@ -1016,12 +1039,183 @@
   renderWatch();
   renderKpiSparks();
   renderPerf();
-  renderDonut();
-  renderBars('#geo-bars', geographic);
-  renderBars('#fx-bars', currency);
+  renderDerivedBook();
 
-  // ── Analytics (concentration, VaR, stress) ───────────────────────
+  // ── Derive book-wide analytics from live positions ───────────────
+  const bucketOfHolding = (h) => {
+    const s = ((h.sector || '') + ' ' + (h.name || '')).toLowerCase();
+    if (h.sym === 'GOLD' || h.gold >= 0.9) return 'Real Assets';
+    if (/crypto/.test(s)) return 'Crypto';
+    if (h.dur > 0 || /bond|treasury|govt|corporate|tips|agg\b|tlt|ief|shy|lqd|hyg|emb/.test(s)) return 'Fixed Income';
+    if (/reit|real estate|real-estate|vnq|prologis|realty/.test(s)) return 'Real Assets';
+    if (/commodity|oil|natural gas|silver|copper|agriculture/.test(s)) return 'Real Assets';
+    if (/cash|money market|1-3 month|0-3 month/.test(s)) return 'Cash & Equivalents';
+    return 'Public Equities';
+  };
+  const countryOfHolding = (h) => {
+    const n = (h.name || '') + ' ' + (h.sector || '');
+    if (/· US|US\b| US$| · US /.test(h.sector || '')) return 'United States';
+    if (/Swiss|· CH/.test(h.sector || '') || /Nestlé|Roche|Novartis/.test(n)) return 'Switzerland';
+    if (/· FR|France|LVMH|Hennessy/.test(n)) return 'Europe ex-UK';
+    if (/· DE|Germany|SAP|Siemens/.test(n)) return 'Europe ex-UK';
+    if (/· NL|Netherlands|ASML/.test(n)) return 'Europe ex-UK';
+    if (/· UK|Britain|AstraZeneca|Shell|HSBC/.test(n)) return 'United Kingdom';
+    if (/· JP|Japan|Toyota|SoftBank|Nikkei/.test(n)) return 'Japan';
+    if (/· HK|· TW|· SG|· CN|Alibaba|Taiwan|SoftBank/.test(n)) return 'Asia ex-Japan';
+    if (/crypto|bitcoin|ethereum/i.test(n)) return 'Global';
+    if (h.dur > 0) return 'United States'; // default for US treasuries / US bond ETFs
+    return 'Global';
+  };
+  const currencyOfHolding = (h) => {
+    const n = (h.name || '') + ' ' + (h.sector || '');
+    if (/· CH|Nestlé|Roche|Novartis/.test(n)) return 'CHF';
+    if (/· FR|· DE|· NL|Europe|ASML|LVMH|SAP|Siemens/.test(n)) return 'EUR';
+    if (/· UK|AstraZeneca|Shell|HSBC/.test(n)) return 'GBP';
+    if (/· JP|Toyota|SoftBank/.test(n)) return 'JPY';
+    return 'USD';
+  };
+
+  const computeBookAnalytics = () => {
+    const totalMV = holdings.reduce((s, h) => s + h.qty * h.px, 0);
+    const cashTotal = cashItems.reduce((s, c) => s + (+c.bal || 0) / (fxRates[c.ccy] || 1), 0);
+    const pmTotal   = pmItems.reduce((s, p) => s + (+p.nav || 0) * 1_000_000, 0); // PM NAVs stored in $M
+    const aum = totalMV + cashTotal + pmTotal;
+
+    // Allocation from actual positions
+    const bucketTargets = {
+      'Public Equities':    40,
+      'Fixed Income':       25,
+      'Private Markets':    18,
+      'Real Assets':         6,
+      'Crypto':              2,
+      'Cash & Equivalents':  4,
+      'Hedge Funds':         5,
+    };
+    const bucketColors = {
+      'Public Equities':    '#c8a86b',
+      'Fixed Income':       '#8ba9d6',
+      'Private Markets':    '#a78bd6',
+      'Real Assets':        '#6faf86',
+      'Crypto':             '#d89a5b',
+      'Cash & Equivalents': '#7a7466',
+      'Hedge Funds':        '#d68ba9',
+    };
+    const bucketMV = new Map();
+    holdings.forEach((h) => {
+      const b = bucketOfHolding(h);
+      bucketMV.set(b, (bucketMV.get(b) || 0) + h.qty * h.px);
+    });
+    bucketMV.set('Private Markets',     pmTotal);
+    bucketMV.set('Cash & Equivalents', (bucketMV.get('Cash & Equivalents') || 0) + cashTotal);
+
+    allocation.length = 0;
+    Object.keys(bucketTargets).forEach((name) => {
+      const mv = bucketMV.get(name) || 0;
+      if (mv <= 0 && !['Private Markets','Cash & Equivalents','Hedge Funds'].includes(name)) return;
+      allocation.push({
+        name,
+        current: +((mv / aum) * 100).toFixed(1),
+        target: bucketTargets[name],
+        color: bucketColors[name],
+      });
+    });
+
+    // Geographic look-through
+    const geoTargets = {
+      'United States': 45, 'Europe ex-UK': 20, 'Switzerland': 8,
+      'United Kingdom': 7, 'Japan': 7, 'Asia ex-Japan': 9, 'Global': 4,
+    };
+    const geoFlags = {
+      'United States': '🇺🇸', 'Europe ex-UK': '🇪🇺', 'Switzerland': '🇨🇭',
+      'United Kingdom': '🇬🇧', 'Japan': '🇯🇵', 'Asia ex-Japan': '🇸🇬', 'Global': '🌐',
+    };
+    const geoMV = new Map();
+    holdings.forEach((h) => {
+      const g = countryOfHolding(h);
+      geoMV.set(g, (geoMV.get(g) || 0) + h.qty * h.px);
+    });
+    const geoTotal = [...geoMV.values()].reduce((a, b) => a + b, 0) || 1;
+    geographic.length = 0;
+    Object.keys(geoTargets).forEach((name) => {
+      const mv = geoMV.get(name) || 0;
+      if (mv <= 0) return;
+      geographic.push({
+        name, flag: geoFlags[name],
+        current: +((mv / geoTotal) * 100).toFixed(1),
+        target: geoTargets[name],
+      });
+    });
+
+    // Currency look-through (before hedging)
+    const ccyTargets = { USD: 50, EUR: 13, CHF: 15, GBP: 8, JPY: 7, Other: 7 };
+    const ccyFlags = { USD: '🇺🇸', EUR: '🇪🇺', CHF: '🇨🇭', GBP: '🇬🇧', JPY: '🇯🇵', Other: '🌐' };
+    const ccyMV = new Map();
+    holdings.forEach((h) => {
+      const c = currencyOfHolding(h);
+      ccyMV.set(c, (ccyMV.get(c) || 0) + h.qty * h.px);
+    });
+    cashItems.forEach((c) => {
+      const usd = (+c.bal || 0) / (fxRates[c.ccy] || 1);
+      const k = ['USD','EUR','CHF','GBP','JPY'].includes(c.ccy) ? c.ccy : 'Other';
+      ccyMV.set(k, (ccyMV.get(k) || 0) + usd);
+    });
+    const ccyTotal = [...ccyMV.values()].reduce((a, b) => a + b, 0) || 1;
+    currency.length = 0;
+    Object.keys(ccyTargets).forEach((name) => {
+      const mv = ccyMV.get(name) || 0;
+      if (mv <= 0 && name !== 'USD') return;
+      currency.push({
+        name: { USD: 'US Dollar', EUR: 'Euro', CHF: 'Swiss Franc', GBP: 'Pound Sterling', JPY: 'Japanese Yen', Other: 'Other' }[name],
+        flag: ccyFlags[name],
+        current: +((mv / ccyTotal) * 100).toFixed(1),
+        target: ccyTargets[name],
+      });
+    });
+
+    // Liquidity ladder (derived)
+    // T+0 = cash + money-market + equities/ETFs
+    // <1M = short-term bonds + crypto (tradable 24/7)
+    // 1-3M = IG / agg bonds
+    // 3-12M = HY / EM bonds / commodities
+    // >1Y = private markets
+    const buckets = { 'T+0': 0, '<1M': 0, '1–3M': 0, '3–12M': 0, '>1Y': 0 };
+    holdings.forEach((h) => {
+      const mv = h.qty * h.px;
+      const b = bucketOfHolding(h);
+      const s = ((h.sector || '') + ' ' + (h.name || '')).toLowerCase();
+      if (b === 'Cash & Equivalents' || b === 'Public Equities' || b === 'Crypto') buckets['T+0'] += mv;
+      else if (h.dur > 0 && h.dur < 2) buckets['<1M'] += mv;
+      else if (h.dur >= 2 && h.dur < 7) buckets['1–3M'] += mv;
+      else if (h.dur >= 7) buckets['3–12M'] += mv;
+      else if (b === 'Real Assets') buckets['3–12M'] += mv;
+      else buckets['T+0'] += mv;
+    });
+    buckets['T+0'] += cashTotal;
+    buckets['>1Y'] += pmTotal;
+    const ladderEl = $('.ladder');
+    if (ladderEl) {
+      ladderEl.innerHTML = Object.entries(buckets).map(([k, v]) =>
+        `<li><span>${k}</span><span class="num">${fmtUSD(v, 0)}</span></li>`
+      ).join('');
+    }
+
+    // Update the hero position count
+    const hpc = $('#hero-pos-count');
+    if (hpc) hpc.textContent = holdings.length;
+  };
+
+  // Re-render the derived displays (donut, bars, liquidity ladder) only
+  // when the book actually changes — not every live tick.
+  const renderDerivedBook = () => {
+    computeBookAnalytics();
+    renderDonut();
+    renderBars('#geo-bars', geographic);
+    renderBars('#fx-bars', currency);
+  };
+
+  // ── Analytics (concentration, VaR, stress) — runs every tick ─────
   const recomputeAnalytics = () => {
+    computeBookAnalytics();
     const totalMV = holdings.reduce((s, h) => s + h.qty * h.px, 0);
     const OTHER_SLEEVE_VAL = 191_000_000;
     const aum = totalMV + OTHER_SLEEVE_VAL;
@@ -1350,6 +1544,7 @@
     bindRowRemove();
     applyRowTags();
     if (holdingsView === 'heat') renderHeatmap();
+    renderDerivedBook();
     recomputeAnalytics();
     renderNotifs();
     liveTick();
@@ -1384,7 +1579,7 @@
   $('#tx-export')?.addEventListener('click', () => {
     const payload = {
       exportedAt: new Date().toISOString(),
-      source: 'Ashford & Vere Dashboard',
+      source: 'Xie Family Office Dashboard',
       transactions,
       manualPrices,
     };
@@ -1722,18 +1917,6 @@
   });
   cmdModal?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', closeCmd));
   $('#nav-search')?.addEventListener('click', (e) => { e.preventDefault(); openCmd(); });
-  $('#nav-advisor')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    const adv = document.querySelector('.card--advisor');
-    if (adv) {
-      adv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      adv.animate([{ boxShadow: '0 0 0 3px rgba(200,168,107,.6)' }, { boxShadow: '0 0 0 0 rgba(200,168,107,0)' }], { duration: 1100 });
-    }
-  });
-  // Advisor inline buttons
-  $$('.card--advisor .btn').forEach((b) => b.addEventListener('click', () => {
-    alert('A secure message has been queued for Eleanor Marchetti. She typically responds within 2 hours.');
-  }));
 
   // Keyboard shortcuts
   const helpModal = $('#help-modal');
@@ -1816,7 +1999,7 @@
       const i = holdings.findIndex((h) => h.sym === sym);
       if (i >= 0) holdings.splice(i, 1);
       anchors.delete(sym); dayOpen.delete(sym); seedPx.delete(sym);
-      renderHoldings(); renderHeatmap(); bindRowRemove(); recomputeAnalytics(); liveTick();
+      renderHoldings(); renderHeatmap(); bindRowRemove(); renderDerivedBook(); recomputeAnalytics(); liveTick();
       return;
     }
     const tile = e.target.closest('.heat-tile[data-sym]');
@@ -1836,9 +2019,11 @@
   };
 
   holdingsBody?.addEventListener('click', (e) => {
-    // Ignore clicks on the editable price cell and the remove column
+    // Ignore clicks on the editable price cell, the remove column, and
+    // the instrument column (which opens the drill-down drawer).
     if (e.target.closest('td[data-field="px"]')) return;
     if (e.target.closest('.row-remove')) return;
+    if (e.target.closest('.ticker')) return;
     if (e.detail === 2) return; // double-clicks handled elsewhere
     const tr = e.target.closest('tr[data-sym]');
     if (!tr) return;
@@ -1848,7 +2033,7 @@
   });
 
   // ── Watchlist CRUD ───────────────────────────────────────────────
-  const WATCH_KEY = 'av-watchlist-v1';
+  const WATCH_KEY = `av-${kp}watchlist-v1`;
   const savedWatch = storageGet(WATCH_KEY, null);
   if (Array.isArray(savedWatch) && savedWatch.length) {
     watchlist.length = 0;
@@ -1951,6 +2136,7 @@
     renderHoldings();
     bindRowRemove();
     applyRowTags();
+    renderDerivedBook();
     recomputeAnalytics();
     liveTick();
     closePosModal();
@@ -2067,6 +2253,8 @@
     if (idx >= 0) pmItems[idx] = data; else pmItems.push(data);
     storageSet(PM_KEY, pmItems);
     renderPM();
+    renderDerivedBook();
+    recomputeAnalytics();
     pmModal.hidden = true;
   });
   $('#pm-delete')?.addEventListener('click', () => {
@@ -2075,6 +2263,8 @@
     pmItems = pmItems.filter((x) => x.id !== id);
     storageSet(PM_KEY, pmItems);
     renderPM();
+    renderDerivedBook();
+    recomputeAnalytics();
     pmModal.hidden = true;
   });
 
@@ -2136,6 +2326,8 @@
     if (idx >= 0) cashItems[idx] = data; else cashItems.push(data);
     storageSet(CASH_KEY, cashItems);
     renderCash();
+    renderDerivedBook();
+    recomputeAnalytics();
     cashModal.hidden = true;
   });
   $('#cash-delete')?.addEventListener('click', () => {
@@ -2144,6 +2336,8 @@
     cashItems = cashItems.filter((x) => x.id !== id);
     storageSet(CASH_KEY, cashItems);
     renderCash();
+    renderDerivedBook();
+    recomputeAnalytics();
     cashModal.hidden = true;
   });
 
@@ -2247,7 +2441,8 @@
   $('#reb-modal')?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => $('#reb-modal').hidden = true));
   $('#reb-send')?.addEventListener('click', () => {
     $('#reb-modal').hidden = true;
-    alert('Proposal sent to Eleanor Marchetti. You will receive confirmation from the desk.');
+    // Create a draft transaction per trade row and open the first one
+    toast('Rebalance tickets queued', 'Review and edit each draft in Recent Activity', 'up');
   });
 
   // ── Calendar / .ics download ────────────────────────────────────
@@ -2256,7 +2451,7 @@
     const year = 2026;
     const monthNum = { 'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12 };
     const stamp = new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z';
-    const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Ashford & Vere//EN'];
+    const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Xie Family Office//EN'];
     events.forEach((e, i) => {
       const m = monthNum[e.m];
       const dt = `${year}${pad(m)}${pad(e.d)}`;
@@ -2368,7 +2563,7 @@
   });
   $('#prefs-reset')?.addEventListener('click', () => {
     if (!confirm('This will remove ALL locally stored data (transactions, prices, watchlist, private markets, cash accounts, notifications and preferences) and reload the page. Continue?')) return;
-    ['av-transactions-v1', 'av-manual-prices-v1', 'av-watchlist-v1', 'av-pm-v1', 'av-cash-v1', 'av-notif-read-v1', 'av-prefs-v1', 'av-theme'].forEach((k) => localStorage.removeItem(k));
+    Object.keys(localStorage).filter((k) => k.startsWith('av-')).forEach((k) => localStorage.removeItem(k));
     location.reload();
   });
 
@@ -2593,6 +2788,196 @@
     updateLiveChip();
   };
 
+  // ── Per-position drawer ─────────────────────────────────────────
+  const drawer = $('#pos-drawer');
+  const drawerCache = new Map(); // sym → { closes, fetchedAt }
+
+  const openDrawer = async (sym) => {
+    const h = holdings.find((x) => x.sym === sym);
+    if (!h) return;
+    const mv    = h.qty * h.px;
+    const pnl   = (h.px - h.cost) * h.qty;
+    const pnlPc = ((h.px / h.cost) - 1) * 100;
+
+    $('#drawer-title').textContent = `${h.sym} · ${h.name}`;
+    $('#drawer-sub').textContent   = `${h.sector} · ${fmtNum(h.qty, 0)} shares · avg cost ${fmtNum(h.cost, 2)}`;
+
+    $('#drawer-kpis').innerHTML = `
+      <div class="drawer__kpi"><span class="lbl">Market value</span><strong>${fmtUSD(mv)}</strong></div>
+      <div class="drawer__kpi"><span class="lbl">Unrealised P&L</span><strong class="${signCls(pnl)}">${(pnl >= 0 ? '+' : '') + fmtUSD(pnl)}</strong><span class="muted small ${signCls(pnlPc)}">${fmtPct(pnlPc)}</span></div>
+      <div class="drawer__kpi"><span class="lbl">Last price</span><strong>${fmtNum(h.px, 2)}</strong><span class="muted small ${signCls(h.dayPct || 0)}">${fmtPct(h.dayPct || 0)} today</span></div>`;
+
+    $('#drawer-sens').innerHTML = `
+      <li><span>Equity beta</span><strong>${(h.beta || 0).toFixed(2)}</strong></li>
+      <li><span>Duration (yrs)</span><strong>${(h.dur || 0).toFixed(1)}</strong></li>
+      <li><span>Non-USD exposure</span><strong>${Math.round((h.fx || 0) * 100)}%</strong></li>
+      <li><span>Gold correlation</span><strong>${(h.gold || 0).toFixed(2)}</strong></li>`;
+
+    $('#drawer-trades').innerHTML = (() => {
+      const mine = transactions.filter((t) => t.symbol === sym)
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      if (!mine.length) return `<li class="empty"><span>No transactions yet for ${sym}.</span></li>`;
+      return mine.map((t) => `
+        <li data-id="${t.id}">
+          <span class="feed__dot ${dotClassFor(t.type)}">${t.type}</span>
+          <div>
+            <strong>${describeTx(t)}</strong>
+            <span class="muted">${txMeta(t)}</span>
+          </div>
+        </li>`).join('');
+    })();
+
+    drawer.hidden = false;
+
+    // Load the price chart (12m daily close), with per-session cache.
+    const chartMeta = $('#drawer-chart-meta');
+    const chart = $('#drawer-chart');
+    chart.innerHTML = '';
+    chartMeta.textContent = 'Loading…';
+    let series = drawerCache.get(sym);
+    if (!series || Date.now() - series.fetchedAt > 10 * 60_000) {
+      const id = (h.stooq || universeBySym.get(sym)?.stooq);
+      if (id) {
+        const rows = await fetchStooqHistory(id, 380);
+        series = { closes: rows.map((r) => r.close), dates: rows.map((r) => r.date), fetchedAt: Date.now() };
+        drawerCache.set(sym, series);
+      } else {
+        series = { closes: [], dates: [] };
+      }
+    }
+    const vals = series.closes;
+    if (!vals.length) {
+      chartMeta.textContent = 'No historical data for this symbol';
+      return;
+    }
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const span = Math.max(1e-9, max - min);
+    const W = 600, H = 160, pad = 8;
+    const x = (i) => pad + (i / (vals.length - 1)) * (W - pad * 2);
+    const y = (v) => pad + (1 - (v - min) / span) * (H - pad * 2);
+    const d = vals.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    const lastTone = vals[vals.length - 1] >= vals[0] ? 'var(--up)' : 'var(--down)';
+    const areaD = d + ` L${x(vals.length - 1).toFixed(1)},${H - pad} L${pad},${H - pad} Z`;
+    chart.innerHTML = `
+      <defs>
+        <linearGradient id="drawerGrad" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="${lastTone}" stop-opacity=".22"/>
+          <stop offset="100%" stop-color="${lastTone}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${areaD}" fill="url(#drawerGrad)" stroke="none" />
+      <path d="${d}" fill="none" stroke="${lastTone}" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+      <circle cx="${x(vals.length - 1).toFixed(1)}" cy="${y(vals[vals.length - 1]).toFixed(1)}" r="3.2" fill="${lastTone}" />`;
+    const periodPct = ((vals[vals.length - 1] / vals[0]) - 1) * 100;
+    chartMeta.innerHTML = `${series.dates[0]} → ${series.dates[series.dates.length - 1]} · <span class="${signCls(periodPct)}">${fmtPct(periodPct)}</span>`;
+  };
+
+  drawer?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => drawer.hidden = true));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && drawer && !drawer.hidden) drawer.hidden = true;
+  });
+  $('#drawer-new-tx')?.addEventListener('click', () => {
+    const sym = ($('#drawer-title').textContent || '').split(' · ')[0];
+    const h = holdings.find((x) => x.sym === sym);
+    if (!h) return;
+    drawer.hidden = true;
+    setTimeout(() => prefillTxModal({ symbol: sym, price: h.px, type: 'BUY' }), 120);
+  });
+
+  // Wire clicks on the holdings table's ticker column
+  holdingsBody?.addEventListener('click', (e) => {
+    const ticker = e.target.closest('.ticker');
+    if (!ticker) return;
+    const tr = ticker.closest('tr[data-sym]');
+    if (!tr) return;
+    e.stopPropagation();
+    openDrawer(tr.dataset.sym);
+  });
+  // And on heatmap tiles (double-click opens drawer; single-click still trades)
+  heatEl?.addEventListener('dblclick', (e) => {
+    const tile = e.target.closest('.heat-tile[data-sym]');
+    if (!tile) return;
+    openDrawer(tile.dataset.sym);
+  });
+
+  // Historical series for the performance chart. Stooq returns full
+  // daily history as CSV via the `i=d` / `d1`/`d2` query; we pull the
+  // last ~14 months for SPY and AGG and synthesise the portfolio NAV
+  // as a rolling 60/40 blend so the chart reflects real market moves.
+  const fetchStooqHistory = async (id, daysBack = 380) => {
+    const now = new Date();
+    const d2 = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const start = new Date(now); start.setDate(start.getDate() - daysBack);
+    const d1 = start.toISOString().slice(0, 10).replace(/-/g, '');
+    const url = `https://stooq.com/q/d/l/?s=${encodeURIComponent(id)}&d1=${d1}&d2=${d2}&i=d`;
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      const lines = text.trim().split(/\r?\n/);
+      if (lines.length < 3) return [];
+      const head = lines[0].split(',');
+      const iDate = head.findIndex((h) => /date/i.test(h));
+      const iClose = head.findIndex((h) => /close/i.test(h));
+      return lines.slice(1).map((l) => {
+        const cols = l.split(',');
+        const date = cols[iDate];
+        const close = parseFloat(cols[iClose]);
+        return Number.isFinite(close) ? { date, close } : null;
+      }).filter(Boolean);
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const syncHistoricalPerf = async () => {
+    const [spy, agg, acwi] = await Promise.all([
+      fetchStooqHistory('spy.us'),
+      fetchStooqHistory('agg.us'),
+      fetchStooqHistory('acwi.us'),
+    ]);
+    if (!spy.length || !agg.length) return; // silent fallback, keep simulated
+    // Align on dates present in all series
+    const byDate = new Map(spy.map((r) => [r.date, { spy: r.close }]));
+    agg.forEach((r) => { if (byDate.has(r.date)) byDate.get(r.date).agg = r.close; });
+    acwi.forEach((r) => { if (byDate.has(r.date)) byDate.get(r.date).acwi = r.close; });
+
+    const rows = [...byDate.entries()]
+      .filter(([, v]) => Number.isFinite(v.spy) && Number.isFinite(v.agg))
+      .sort(([a], [b]) => a.localeCompare(b));
+    if (rows.length < 20) return;
+
+    // Rebase each series to 100 at the first aligned date
+    const base = rows[0][1];
+    const spyIdx = rows.map(([, v]) => (v.spy / base.spy) * 100);
+    const aggIdx = rows.map(([, v]) => (v.agg / base.agg) * 100);
+    const acwiIdx = rows.map(([, v]) => Number.isFinite(v.acwi) && base.acwi
+      ? (v.acwi / base.acwi) * 100
+      : null);
+    // Portfolio = 65% equities + 35% fixed income blend (roughly matches
+    // the allocation donut). Fill in ACWI when missing from SPY alone.
+    const port = rows.map((_, i) => 0.65 * spyIdx[i] + 0.35 * aggIdx[i]);
+    const bm   = rows.map((_, i) => 0.60 * spyIdx[i] + 0.40 * aggIdx[i]);
+    const acwiFilled = acwiIdx.map((v, i) => v == null ? spyIdx[i] : v);
+
+    perfSeries.port = port;
+    perfSeries.bm   = bm;
+    perfSeries.acwi = acwiFilled;
+    perfSeries.labels = rows.map(([d]) => d);
+    perfSeries.isReal = true;
+    renderPerf();
+    // Update the legend summaries with real period returns
+    const pct = (arr) => (arr[arr.length - 1] / arr[0] - 1) * 100;
+    const legend = document.querySelector('.chart-legend');
+    if (legend) {
+      const pctTxt = (v) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+      legend.innerHTML = `
+        <span class="legend-item"><i class="swatch swatch--gold"></i>Portfolio <strong class="${pct(port) >= 0 ? 'up' : 'down'}">${pctTxt(pct(port))}</strong></span>
+        <span class="legend-item"><i class="swatch swatch--muted"></i>60/40 Benchmark <strong>${pctTxt(pct(bm))}</strong></span>
+        <span class="legend-item"><i class="swatch swatch--alt"></i>MSCI ACWI <strong>${pctTxt(pct(acwiFilled))}</strong></span>`;
+    }
+  };
+
   // Chip UI + interval management
   const updateLiveChip = () => {
     const chip = $('#live-chip');
@@ -2647,6 +3032,134 @@
   // Start live pricing after all render functions are in place
   if (prefs.live) startLive();
   else            updateLiveChip();
+
+  // Historical performance: fetch once on boot. Re-fetching every poll
+  // would be wasteful since daily closes rarely change intraday.
+  if (prefs.live) syncHistoricalPerf();
+
+  // ── Profile ─────────────────────────────────────────────────────
+  const PROFILE_KEY = 'av-profile-v1';
+  const profileDefaults = { name: 'Xie Family', initials: 'XF', role: 'Principal', office: 'Xie Family Office' };
+  const profile = Object.assign({}, profileDefaults, (() => {
+    try { return JSON.parse(localStorage.getItem(PROFILE_KEY)) || {}; } catch { return {}; }
+  })());
+
+  const applyProfile = () => {
+    $('#user-name') && ($('#user-name').textContent = profile.name);
+    $('#user-avatar') && ($('#user-avatar').textContent = (profile.initials || '').slice(0, 3).toUpperCase() || 'XF');
+    $('#hero-name') && ($('#hero-name').textContent = profile.name);
+    $('#bc-client') && ($('#bc-client').textContent = profile.office);
+    const brandName = document.querySelector('.brand__name');
+    if (brandName) brandName.textContent = profile.office;
+  };
+  applyProfile();
+
+  // Dynamic hero date / greeting
+  const setHeroDate = () => {
+    const el = $('#hero-date');
+    if (!el) return;
+    const now = new Date();
+    const hr  = now.getHours();
+    const greet = hr < 5 ? 'Good evening' : hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
+    const fmt = now.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    el.textContent = `${fmt} · ${time}`;
+    const heroH1 = document.querySelector('.hero .display');
+    if (heroH1) heroH1.childNodes[0].nodeValue = `${greet}, `;
+  };
+  setHeroDate();
+  setInterval(setHeroDate, 60_000);
+
+  const profileModal = $('#profile-modal');
+  $('#profile-btn')?.addEventListener('click', () => {
+    $('#profile-name').value     = profile.name;
+    $('#profile-initials').value = profile.initials;
+    $('#profile-role').value     = profile.role;
+    $('#profile-office').value   = profile.office;
+    profileModal.hidden = false;
+  });
+  profileModal?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => profileModal.hidden = true));
+  $('#profile-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    profile.name     = $('#profile-name').value.trim() || 'Xie Family';
+    profile.initials = ($('#profile-initials').value.trim() || profile.name.split(/\s+/).map((w) => w[0]).join('').slice(0, 3)).toUpperCase();
+    profile.role     = $('#profile-role').value.trim() || 'Principal';
+    profile.office   = $('#profile-office').value.trim() || 'Xie Family Office';
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    applyProfile();
+    profileModal.hidden = true;
+    toast('Profile updated', profile.name, 'up');
+  });
+
+  // ── Portfolio switcher ──────────────────────────────────────────
+  const portMenu = $('#portfolio-menu');
+  const portCurrent = () => portfolios.find((p) => p.id === activePortfolioId) || portfolios[0];
+  const renderPortfolioLabel = () => {
+    const p = portCurrent();
+    $('#portfolio-current') && ($('#portfolio-current').textContent = p.name);
+    $('#portfolio-label')   && ($('#portfolio-label').textContent   = p.name);
+  };
+  const renderPortfolioMenu = () => {
+    const list = $('#portfolio-list');
+    if (!list) return;
+    list.innerHTML = portfolios.map((p) => `
+      <li data-id="${p.id}" class="${p.id === activePortfolioId ? 'is-active' : ''}" role="menuitem" tabindex="0">
+        <div>
+          <strong>${p.name}</strong>
+          ${p.id === 'default' ? '<div class="sub">Primary book</div>' : `<div class="sub">${p.id}</div>`}
+        </div>
+        ${p.id === 'default' ? '' : `<button class="rm" data-rm="${p.id}" title="Remove portfolio">✕</button>`}
+      </li>`).join('');
+  };
+  renderPortfolioLabel();
+  renderPortfolioMenu();
+
+  const switchPortfolio = (id) => {
+    if (id === activePortfolioId) { portMenu.hidden = true; return; }
+    localStorage.setItem(ACTIVE_KEY, id);
+    // Reload to re-boot with the new portfolio's data
+    const url = new URL(location.href);
+    url.searchParams.set('p', id);
+    location.href = url.toString();
+  };
+
+  $('#portfolio-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    portMenu.hidden = !portMenu.hidden;
+    $('#portfolio-btn').setAttribute('aria-expanded', portMenu.hidden ? 'false' : 'true');
+  });
+  document.addEventListener('click', (e) => {
+    if (!portMenu || portMenu.hidden) return;
+    if (!portMenu.contains(e.target) && e.target !== $('#portfolio-btn') && !$('#portfolio-btn').contains(e.target)) {
+      portMenu.hidden = true;
+    }
+  });
+  $('#portfolio-list')?.addEventListener('click', (e) => {
+    const rm = e.target.closest('button[data-rm]');
+    if (rm) {
+      e.stopPropagation();
+      const id = rm.dataset.rm;
+      if (!confirm(`Remove portfolio "${portfolios.find((p) => p.id === id)?.name}" and all its data?`)) return;
+      // Clear its namespaced keys, remove from the list
+      Object.keys(localStorage).filter((k) => k.startsWith(`av-p-${id}-`)).forEach((k) => localStorage.removeItem(k));
+      portfolios = portfolios.filter((p) => p.id !== id);
+      localStorage.setItem(PORTFOLIOS_KEY, JSON.stringify(portfolios));
+      if (id === activePortfolioId) switchPortfolio('default');
+      else renderPortfolioMenu();
+      return;
+    }
+    const li = e.target.closest('li[data-id]');
+    if (li) switchPortfolio(li.dataset.id);
+  });
+  $('#portfolio-add')?.addEventListener('click', () => {
+    const name = prompt('Portfolio name (e.g. Personal, Trust, Foundation):');
+    if (!name) return;
+    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || ('p' + Date.now().toString(36));
+    if (portfolios.find((p) => p.id === id)) { alert('A portfolio with that name already exists.'); return; }
+    portfolios.push({ id, name: name.trim() });
+    localStorage.setItem(PORTFOLIOS_KEY, JSON.stringify(portfolios));
+    switchPortfolio(id);
+  });
 
   // ── Service Worker (offline app shell) ──────────────────────────
   // Only register over http(s): file:// origins reject service workers.

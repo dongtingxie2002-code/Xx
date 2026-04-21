@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ashford &amp; Vere — Private Wealth Dashboard</title>
+  <title>Xie Family Office — Private Wealth Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -21,8 +21,8 @@
           <path d="M20 11 V29 M12 16 L28 24 M28 16 L12 24" stroke="currentColor" stroke-width=".8" opacity=".6"/>
         </svg>
         <div class="brand__txt">
-          <span class="brand__name">Ashford &amp; Vere</span>
-          <span class="brand__tag">Private Wealth · Est. 1897</span>
+          <span class="brand__name">Xie Family Office</span>
+          <span class="brand__tag">Private Wealth</span>
         </div>
       </div>
 
@@ -77,39 +77,31 @@
           Events
         </a>
 
-        <div class="nav__group">Advisory</div>
-        <a class="nav__item" href="#" id="nav-advisor">
-          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.7 7.1L4 21l1.9-5.3A8 8 0 1 1 21 12Z"/></svg>
-          Relationship Desk<span class="dot dot--live"></span>
-        </a>
+        <div class="nav__group">Tools</div>
         <a class="nav__item" href="#" id="nav-search">
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg>
           Command palette<span class="nav__meta">⌘K</span>
         </a>
       </nav>
-
-      <div class="advisor card card--advisor">
-        <div class="advisor__avatar" aria-hidden="true">EM</div>
-        <div class="advisor__body">
-          <span class="eyebrow">Your Relationship Manager</span>
-          <strong>Eleanor Marchetti</strong>
-          <span class="muted">Managing Director, Geneva</span>
-          <div class="advisor__row">
-            <button class="btn btn--ghost">Message</button>
-            <button class="btn btn--ghost">Book call</button>
-          </div>
-        </div>
-      </div>
     </aside>
 
     <!-- ───────── Topbar ───────── -->
     <header class="topbar">
       <div class="breadcrumb">
-        <span>Client</span>
+        <span id="bc-client">Xie Family Office</span>
         <span class="sep">/</span>
-        <span>H. St. Clair Family Office</span>
-        <span class="sep">/</span>
-        <strong>Consolidated Overview</strong>
+        <div class="portfolio-switch">
+          <button id="portfolio-btn" aria-haspopup="menu" aria-expanded="false">
+            <strong id="portfolio-current">Consolidated</strong>
+            <svg viewBox="0 0 20 20" width="10" height="10" stroke="currentColor" fill="none" stroke-width="1.8" aria-hidden="true"><path d="M5 8l5 5 5-5"/></svg>
+          </button>
+          <div id="portfolio-menu" class="popover popover--menu" role="menu" hidden>
+            <ul id="portfolio-list"></ul>
+            <footer class="popover__foot">
+              <button id="portfolio-add" class="btn btn--ghost btn--sm">+ New portfolio</button>
+            </footer>
+          </div>
+        </div>
       </div>
 
       <div class="top-actions">
@@ -146,13 +138,13 @@
             <ul id="notif-list" class="popover__list"></ul>
           </div>
         </div>
-        <div class="user">
-          <div class="user__avatar">HS</div>
+        <button class="user" id="profile-btn" title="Edit profile">
+          <div class="user__avatar" id="user-avatar">XF</div>
           <div class="user__meta">
-            <strong>Harcourt St. Clair</strong>
-            <span class="muted">Principal · Account 0041-778</span>
+            <strong id="user-name">Xie Family</strong>
+            <span class="muted" id="user-sub">Principal · <span id="portfolio-label">Consolidated</span></span>
           </div>
-        </div>
+        </button>
       </div>
     </header>
 
@@ -162,9 +154,9 @@
       <!-- Hero / greeting -->
       <section class="hero" id="overview">
         <div>
-          <span class="eyebrow">Monday, 20 April 2026 · Geneva 14:32 GMT+2</span>
-          <h1 class="display">Good afternoon, <em>Harcourt</em>.</h1>
-          <p class="lede">Markets are modestly risk‑on. Your consolidated portfolio is up <strong class="up" id="hero-day-return">+0.48%</strong> intraday, outpacing the MSCI All‑Country by 12&nbsp;bps.</p>
+          <span class="eyebrow" id="hero-date">—</span>
+          <h1 class="display">Good afternoon, <em id="hero-name">Xie family</em>.</h1>
+          <p class="lede">Your consolidated portfolio is <strong class="up" id="hero-day-return">+0.00%</strong> intraday, tracked across <span id="hero-pos-count">0</span> positions.</p>
         </div>
         <div class="hero__actions">
           <button id="hero-tx-new" class="btn btn--gold">+ New transaction</button>
@@ -766,8 +758,8 @@
           </header>
           <div class="modal__body" id="reb-body"></div>
           <footer class="modal__foot">
-            <button type="button" class="btn btn--ghost" data-close>Later</button>
-            <button type="button" class="btn btn--gold" id="reb-send">Send to desk</button>
+            <button type="button" class="btn btn--ghost" data-close>Close</button>
+            <button type="button" class="btn btn--gold" id="reb-send">Create tickets</button>
           </footer>
         </div>
       </div>
@@ -1008,16 +1000,83 @@
         </form>
       </div>
 
+      <!-- Profile modal -->
+      <div id="profile-modal" class="modal" role="dialog" aria-modal="true" hidden>
+        <div class="modal__backdrop" data-close></div>
+        <form class="modal__panel modal__panel--form" id="profile-form">
+          <header class="modal__head">
+            <div>
+              <h3 class="modal__title">Profile</h3>
+              <span class="muted">These details show in the hero and topbar. They are saved on this device only.</span>
+            </div>
+            <button type="button" class="icon-btn" data-close aria-label="Close">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </header>
+          <div class="modal__body">
+            <div class="form-grid">
+              <label class="field field--wide"><span>Display name</span><input type="text" id="profile-name" placeholder="e.g. Xie Family" /></label>
+              <label class="field"><span>Initials</span><input type="text" id="profile-initials" maxlength="3" placeholder="XF" /></label>
+              <label class="field"><span>Role</span><input type="text" id="profile-role" placeholder="Principal" /></label>
+              <label class="field field--wide"><span>Office / account label</span><input type="text" id="profile-office" placeholder="Xie Family Office" /></label>
+            </div>
+          </div>
+          <footer class="modal__foot">
+            <button type="button" class="btn btn--ghost" data-close>Cancel</button>
+            <button type="submit" class="btn btn--gold">Save</button>
+          </footer>
+        </form>
+      </div>
+
+      <!-- Per-position drawer -->
+      <aside id="pos-drawer" class="drawer" hidden aria-labelledby="drawer-title">
+        <div class="drawer__backdrop" data-close></div>
+        <div class="drawer__panel">
+          <header class="drawer__head">
+            <div>
+              <h3 class="modal__title" id="drawer-title">—</h3>
+              <span class="muted" id="drawer-sub">—</span>
+            </div>
+            <button type="button" class="icon-btn" data-close aria-label="Close">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </header>
+          <div class="drawer__body">
+            <div class="drawer__kpis" id="drawer-kpis"></div>
+            <div class="drawer__section">
+              <div class="drawer__section-head">
+                <span class="eyebrow">12‑month price</span>
+                <span class="muted small" id="drawer-chart-meta">—</span>
+              </div>
+              <svg id="drawer-chart" class="drawer-chart" viewBox="0 0 600 160" preserveAspectRatio="none" aria-label="Price history"></svg>
+            </div>
+            <div class="drawer__section">
+              <div class="drawer__section-head">
+                <span class="eyebrow">Risk sensitivities</span>
+              </div>
+              <ul class="drawer__sens" id="drawer-sens"></ul>
+            </div>
+            <div class="drawer__section">
+              <div class="drawer__section-head">
+                <span class="eyebrow">Your trades</span>
+                <button class="btn btn--ghost btn--sm" id="drawer-new-tx">+ Ticket</button>
+              </div>
+              <ul class="feed" id="drawer-trades"></ul>
+            </div>
+          </div>
+        </div>
+      </aside>
+
       <!-- Toast -->
       <div id="toast-wrap" class="toast-wrap" aria-live="polite" aria-atomic="true"></div>
 
       <!-- Footer -->
       <footer class="legal">
         <div>
-          <strong>Ashford &amp; Vere SA</strong> · Rue du Rhône 62, 1204 Genève · Regulated by FINMA
+          <strong>Xie Family Office</strong> · Consolidated wealth dashboard
         </div>
         <div class="muted">
-          Information is indicative and may be delayed. Past performance is not indicative of future results. Prepared exclusively for H. St. Clair &amp; Family.
+          Information is indicative and may be delayed. Past performance is not indicative of future results. Data saved locally on this device.
         </div>
       </footer>
 
