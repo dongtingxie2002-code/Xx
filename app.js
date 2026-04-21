@@ -20,7 +20,7 @@
   // change re-formats every subsequent render.
   let numLocale = 'en-US';
   let baseCcy   = 'USD';
-  const fxRates = { USD: 1, CHF: 0.91, EUR: 0.93, GBP: 0.79, SGD: 1.34, JPY: 154 };
+  const fxRates = { USD: 1, CHF: 0.91, EUR: 0.93, GBP: 0.79, SGD: 1.34, JPY: 154, CNY: 7.22 };
   const fmtUSD = (n, frac = 0) => ((+n || 0) * (fxRates[baseCcy] || 1)).toLocaleString(numLocale, {
     style: 'currency', currency: baseCcy,
     minimumFractionDigits: frac, maximumFractionDigits: frac,
@@ -36,116 +36,118 @@
   // Covers equities, ETFs, crypto, FX, commodities, fixed income. Each
   // row supplies the sensitivity the risk engine needs (beta, duration,
   // fx, gold) so any BUY on one of these tickers creates a position
-  // with correct defaults. Prices are indicative for seeding only.
+  // with correct defaults. The `stooq` and `coingecko` fields are the
+  // IDs used by the live-pricing adapter; rows without them fall back
+  // to the simulated mean-reverting walk.
   const universe = [
     // US mega-cap equities
-    { sym: 'NVDA',  name: 'NVIDIA Corp.',           type: 'Equity · US',    px: 892.40, beta: 1.55, dur: 0, fx: 0, gold: 0 },
-    { sym: 'MSFT',  name: 'Microsoft Corp.',        type: 'Equity · US',    px: 422.75, beta: 1.05, dur: 0, fx: 0, gold: 0 },
-    { sym: 'AAPL',  name: 'Apple Inc.',             type: 'Equity · US',    px: 208.90, beta: 1.20, dur: 0, fx: 0, gold: 0 },
-    { sym: 'AMZN',  name: 'Amazon.com',             type: 'Equity · US',    px: 192.40, beta: 1.25, dur: 0, fx: 0, gold: 0 },
-    { sym: 'GOOG',  name: 'Alphabet (Class C)',     type: 'Equity · US',    px: 178.10, beta: 1.10, dur: 0, fx: 0, gold: 0 },
-    { sym: 'GOOGL', name: 'Alphabet (Class A)',     type: 'Equity · US',    px: 177.30, beta: 1.10, dur: 0, fx: 0, gold: 0 },
-    { sym: 'META',  name: 'Meta Platforms',         type: 'Equity · US',    px: 512.10, beta: 1.30, dur: 0, fx: 0, gold: 0 },
-    { sym: 'TSLA',  name: 'Tesla Inc.',             type: 'Equity · US',    px: 174.60, beta: 1.95, dur: 0, fx: 0, gold: 0 },
-    { sym: 'BRK.B', name: 'Berkshire Hathaway B',   type: 'Equity · US',    px: 408.30, beta: 0.85, dur: 0, fx: 0, gold: 0 },
-    { sym: 'JPM',   name: 'JPMorgan Chase',         type: 'Equity · US',    px: 198.40, beta: 1.10, dur: 0, fx: 0, gold: 0 },
-    { sym: 'V',     name: 'Visa',                   type: 'Equity · US',    px: 284.60, beta: 0.95, dur: 0, fx: 0, gold: 0 },
-    { sym: 'MA',    name: 'Mastercard',             type: 'Equity · US',    px: 462.10, beta: 1.00, dur: 0, fx: 0, gold: 0 },
-    { sym: 'UNH',   name: 'UnitedHealth',           type: 'Equity · US',    px: 489.20, beta: 0.70, dur: 0, fx: 0, gold: 0 },
-    { sym: 'JNJ',   name: 'Johnson & Johnson',      type: 'Equity · US',    px: 152.80, beta: 0.55, dur: 0, fx: 0, gold: 0 },
-    { sym: 'LLY',   name: 'Eli Lilly',              type: 'Equity · US',    px: 742.30, beta: 0.70, dur: 0, fx: 0, gold: 0 },
-    { sym: 'XOM',   name: 'Exxon Mobil',            type: 'Equity · US',    px: 115.40, beta: 1.05, dur: 0, fx: 0, gold: 0 },
-    { sym: 'WMT',   name: 'Walmart',                type: 'Equity · US',    px:  68.30, beta: 0.55, dur: 0, fx: 0, gold: 0 },
-    { sym: 'KO',    name: 'Coca-Cola',              type: 'Equity · US',    px:  62.40, beta: 0.55, dur: 0, fx: 0, gold: 0 },
-    { sym: 'PEP',   name: 'PepsiCo',                type: 'Equity · US',    px: 172.80, beta: 0.60, dur: 0, fx: 0, gold: 0 },
-    { sym: 'DIS',   name: 'Walt Disney',            type: 'Equity · US',    px:  96.20, beta: 1.15, dur: 0, fx: 0, gold: 0 },
-    { sym: 'NFLX',  name: 'Netflix',                type: 'Equity · US',    px: 642.10, beta: 1.20, dur: 0, fx: 0, gold: 0 },
-    { sym: 'COST',  name: 'Costco Wholesale',       type: 'Equity · US',    px: 812.40, beta: 0.80, dur: 0, fx: 0, gold: 0 },
-    { sym: 'HD',    name: 'Home Depot',             type: 'Equity · US',    px: 340.10, beta: 1.00, dur: 0, fx: 0, gold: 0 },
-    { sym: 'AMD',   name: 'Advanced Micro Devices', type: 'Equity · US',    px: 160.40, beta: 1.65, dur: 0, fx: 0, gold: 0 },
-    { sym: 'INTC',  name: 'Intel Corp.',            type: 'Equity · US',    px:  32.40, beta: 1.30, dur: 0, fx: 0, gold: 0 },
-    { sym: 'CRM',   name: 'Salesforce',             type: 'Equity · US',    px: 272.60, beta: 1.25, dur: 0, fx: 0, gold: 0 },
-    { sym: 'ORCL',  name: 'Oracle',                 type: 'Equity · US',    px: 142.50, beta: 1.00, dur: 0, fx: 0, gold: 0 },
-    { sym: 'UBER',  name: 'Uber Technologies',      type: 'Equity · US',    px:  72.10, beta: 1.35, dur: 0, fx: 0, gold: 0 },
-    { sym: 'PLTR',  name: 'Palantir',               type: 'Equity · US',    px:  24.80, beta: 1.70, dur: 0, fx: 0, gold: 0 },
+    { sym: 'NVDA',  name: 'NVIDIA Corp.',           type: 'Equity · US',    px: 892.40, beta: 1.55, dur: 0, fx: 0, gold: 0, stooq: 'nvda.us' },
+    { sym: 'MSFT',  name: 'Microsoft Corp.',        type: 'Equity · US',    px: 422.75, beta: 1.05, dur: 0, fx: 0, gold: 0, stooq: 'msft.us' },
+    { sym: 'AAPL',  name: 'Apple Inc.',             type: 'Equity · US',    px: 208.90, beta: 1.20, dur: 0, fx: 0, gold: 0, stooq: 'aapl.us' },
+    { sym: 'AMZN',  name: 'Amazon.com',             type: 'Equity · US',    px: 192.40, beta: 1.25, dur: 0, fx: 0, gold: 0, stooq: 'amzn.us' },
+    { sym: 'GOOG',  name: 'Alphabet (Class C)',     type: 'Equity · US',    px: 178.10, beta: 1.10, dur: 0, fx: 0, gold: 0, stooq: 'goog.us' },
+    { sym: 'GOOGL', name: 'Alphabet (Class A)',     type: 'Equity · US',    px: 177.30, beta: 1.10, dur: 0, fx: 0, gold: 0, stooq: 'googl.us' },
+    { sym: 'META',  name: 'Meta Platforms',         type: 'Equity · US',    px: 512.10, beta: 1.30, dur: 0, fx: 0, gold: 0, stooq: 'meta.us' },
+    { sym: 'TSLA',  name: 'Tesla Inc.',             type: 'Equity · US',    px: 174.60, beta: 1.95, dur: 0, fx: 0, gold: 0, stooq: 'tsla.us' },
+    { sym: 'BRK.B', name: 'Berkshire Hathaway B',   type: 'Equity · US',    px: 408.30, beta: 0.85, dur: 0, fx: 0, gold: 0, stooq: 'brk-b.us' },
+    { sym: 'JPM',   name: 'JPMorgan Chase',         type: 'Equity · US',    px: 198.40, beta: 1.10, dur: 0, fx: 0, gold: 0, stooq: 'jpm.us' },
+    { sym: 'V',     name: 'Visa',                   type: 'Equity · US',    px: 284.60, beta: 0.95, dur: 0, fx: 0, gold: 0, stooq: 'v.us' },
+    { sym: 'MA',    name: 'Mastercard',             type: 'Equity · US',    px: 462.10, beta: 1.00, dur: 0, fx: 0, gold: 0, stooq: 'ma.us' },
+    { sym: 'UNH',   name: 'UnitedHealth',           type: 'Equity · US',    px: 489.20, beta: 0.70, dur: 0, fx: 0, gold: 0, stooq: 'unh.us' },
+    { sym: 'JNJ',   name: 'Johnson & Johnson',      type: 'Equity · US',    px: 152.80, beta: 0.55, dur: 0, fx: 0, gold: 0, stooq: 'jnj.us' },
+    { sym: 'LLY',   name: 'Eli Lilly',              type: 'Equity · US',    px: 742.30, beta: 0.70, dur: 0, fx: 0, gold: 0, stooq: 'lly.us' },
+    { sym: 'XOM',   name: 'Exxon Mobil',            type: 'Equity · US',    px: 115.40, beta: 1.05, dur: 0, fx: 0, gold: 0, stooq: 'xom.us' },
+    { sym: 'WMT',   name: 'Walmart',                type: 'Equity · US',    px:  68.30, beta: 0.55, dur: 0, fx: 0, gold: 0, stooq: 'wmt.us' },
+    { sym: 'KO',    name: 'Coca-Cola',              type: 'Equity · US',    px:  62.40, beta: 0.55, dur: 0, fx: 0, gold: 0, stooq: 'ko.us' },
+    { sym: 'PEP',   name: 'PepsiCo',                type: 'Equity · US',    px: 172.80, beta: 0.60, dur: 0, fx: 0, gold: 0, stooq: 'pep.us' },
+    { sym: 'DIS',   name: 'Walt Disney',            type: 'Equity · US',    px:  96.20, beta: 1.15, dur: 0, fx: 0, gold: 0, stooq: 'dis.us' },
+    { sym: 'NFLX',  name: 'Netflix',                type: 'Equity · US',    px: 642.10, beta: 1.20, dur: 0, fx: 0, gold: 0, stooq: 'nflx.us' },
+    { sym: 'COST',  name: 'Costco Wholesale',       type: 'Equity · US',    px: 812.40, beta: 0.80, dur: 0, fx: 0, gold: 0, stooq: 'cost.us' },
+    { sym: 'HD',    name: 'Home Depot',             type: 'Equity · US',    px: 340.10, beta: 1.00, dur: 0, fx: 0, gold: 0, stooq: 'hd.us' },
+    { sym: 'AMD',   name: 'Advanced Micro Devices', type: 'Equity · US',    px: 160.40, beta: 1.65, dur: 0, fx: 0, gold: 0, stooq: 'amd.us' },
+    { sym: 'INTC',  name: 'Intel Corp.',            type: 'Equity · US',    px:  32.40, beta: 1.30, dur: 0, fx: 0, gold: 0, stooq: 'intc.us' },
+    { sym: 'CRM',   name: 'Salesforce',             type: 'Equity · US',    px: 272.60, beta: 1.25, dur: 0, fx: 0, gold: 0, stooq: 'crm.us' },
+    { sym: 'ORCL',  name: 'Oracle',                 type: 'Equity · US',    px: 142.50, beta: 1.00, dur: 0, fx: 0, gold: 0, stooq: 'orcl.us' },
+    { sym: 'UBER',  name: 'Uber Technologies',      type: 'Equity · US',    px:  72.10, beta: 1.35, dur: 0, fx: 0, gold: 0, stooq: 'uber.us' },
+    { sym: 'PLTR',  name: 'Palantir',               type: 'Equity · US',    px:  24.80, beta: 1.70, dur: 0, fx: 0, gold: 0, stooq: 'pltr.us' },
     // International equities
-    { sym: 'ASML',  name: 'ASML Holding',           type: 'Equity · NL',    px: 910.20, beta: 1.40, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'LVMH',  name: 'LVMH Moët Hennessy',     type: 'Equity · FR',    px: 748.40, beta: 0.90, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'NESN',  name: 'Nestlé',                 type: 'Equity · CH',    px: 104.12, beta: 0.55, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'ROG',   name: 'Roche Holding',          type: 'Equity · CH',    px: 262.40, beta: 0.50, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'NOVN',  name: 'Novartis',               type: 'Equity · CH',    px:  94.10, beta: 0.55, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'SAP',   name: 'SAP SE',                 type: 'Equity · DE',    px: 212.40, beta: 1.00, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'SIE',   name: 'Siemens AG',             type: 'Equity · DE',    px: 181.20, beta: 1.10, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'AZN',   name: 'AstraZeneca',            type: 'Equity · UK',    px: 126.40, beta: 0.55, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'SHEL',  name: 'Shell plc',              type: 'Equity · UK',    px:  35.20, beta: 1.00, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'HSBA',  name: 'HSBC',                   type: 'Equity · UK',    px:   8.90, beta: 1.00, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'TSM',   name: 'Taiwan Semiconductor',   type: 'Equity · TW',    px: 168.20, beta: 1.30, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'BABA',  name: 'Alibaba Group',          type: 'Equity · HK',    px:  78.20, beta: 1.30, dur: 0, fx: 1,   gold: 0 },
-    { sym: '7203',  name: 'Toyota Motor',           type: 'Equity · JP',    px: 2840,   beta: 0.85, dur: 0, fx: 1,   gold: 0 },
-    { sym: '9984',  name: 'SoftBank Group',         type: 'Equity · JP',    px: 9720,   beta: 1.40, dur: 0, fx: 1,   gold: 0 },
+    { sym: 'ASML',  name: 'ASML Holding',           type: 'Equity · NL',    px: 910.20, beta: 1.40, dur: 0, fx: 1,   gold: 0, stooq: 'asml.us' },
+    { sym: 'LVMH',  name: 'LVMH Moët Hennessy',     type: 'Equity · FR',    px: 748.40, beta: 0.90, dur: 0, fx: 1,   gold: 0, stooq: 'mc.fr' },
+    { sym: 'NESN',  name: 'Nestlé',                 type: 'Equity · CH',    px: 104.12, beta: 0.55, dur: 0, fx: 1,   gold: 0, stooq: 'nesn.ch' },
+    { sym: 'ROG',   name: 'Roche Holding',          type: 'Equity · CH',    px: 262.40, beta: 0.50, dur: 0, fx: 1,   gold: 0, stooq: 'rog.ch' },
+    { sym: 'NOVN',  name: 'Novartis',               type: 'Equity · CH',    px:  94.10, beta: 0.55, dur: 0, fx: 1,   gold: 0, stooq: 'novn.ch' },
+    { sym: 'SAP',   name: 'SAP SE',                 type: 'Equity · DE',    px: 212.40, beta: 1.00, dur: 0, fx: 1,   gold: 0, stooq: 'sap.de' },
+    { sym: 'SIE',   name: 'Siemens AG',             type: 'Equity · DE',    px: 181.20, beta: 1.10, dur: 0, fx: 1,   gold: 0, stooq: 'sie.de' },
+    { sym: 'AZN',   name: 'AstraZeneca',            type: 'Equity · UK',    px: 126.40, beta: 0.55, dur: 0, fx: 1,   gold: 0, stooq: 'azn.uk' },
+    { sym: 'SHEL',  name: 'Shell plc',              type: 'Equity · UK',    px:  35.20, beta: 1.00, dur: 0, fx: 1,   gold: 0, stooq: 'shel.uk' },
+    { sym: 'HSBA',  name: 'HSBC',                   type: 'Equity · UK',    px:   8.90, beta: 1.00, dur: 0, fx: 1,   gold: 0, stooq: 'hsba.uk' },
+    { sym: 'TSM',   name: 'Taiwan Semiconductor',   type: 'Equity · TW',    px: 168.20, beta: 1.30, dur: 0, fx: 1,   gold: 0, stooq: 'tsm.us' },
+    { sym: 'BABA',  name: 'Alibaba Group',          type: 'Equity · HK',    px:  78.20, beta: 1.30, dur: 0, fx: 1,   gold: 0, stooq: 'baba.us' },
+    { sym: '7203',  name: 'Toyota Motor',           type: 'Equity · JP',    px: 2840,   beta: 0.85, dur: 0, fx: 1,   gold: 0, stooq: '7203.jp' },
+    { sym: '9984',  name: 'SoftBank Group',         type: 'Equity · JP',    px: 9720,   beta: 1.40, dur: 0, fx: 1,   gold: 0, stooq: '9984.jp' },
     // Equity ETFs
-    { sym: 'SPY',   name: 'SPDR S&P 500 ETF',       type: 'ETF · Equity',   px: 528.40, beta: 1.00, dur: 0, fx: 0, gold: 0 },
-    { sym: 'VOO',   name: 'Vanguard S&P 500 ETF',   type: 'ETF · Equity',   px: 485.20, beta: 1.00, dur: 0, fx: 0, gold: 0 },
-    { sym: 'VTI',   name: 'Vanguard Total Market',  type: 'ETF · Equity',   px: 262.10, beta: 1.00, dur: 0, fx: 0, gold: 0 },
-    { sym: 'QQQ',   name: 'Invesco Nasdaq-100 ETF', type: 'ETF · Equity',   px: 456.80, beta: 1.20, dur: 0, fx: 0, gold: 0 },
-    { sym: 'IWM',   name: 'iShares Russell 2000',   type: 'ETF · Equity',   px: 218.30, beta: 1.15, dur: 0, fx: 0, gold: 0 },
-    { sym: 'DIA',   name: 'SPDR Dow Jones',         type: 'ETF · Equity',   px: 392.60, beta: 0.95, dur: 0, fx: 0, gold: 0 },
-    { sym: 'EFA',   name: 'iShares MSCI EAFE',      type: 'ETF · Int\'l',   px:  81.30, beta: 0.90, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'EEM',   name: 'iShares MSCI EM',        type: 'ETF · EM',       px:  45.20, beta: 1.05, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'VEA',   name: 'Vanguard Developed',     type: 'ETF · Int\'l',   px:  52.40, beta: 0.90, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'VWO',   name: 'Vanguard Emerging',      type: 'ETF · EM',       px:  45.80, beta: 1.05, dur: 0, fx: 1,   gold: 0 },
-    { sym: 'ACWI',  name: 'iShares MSCI ACWI',      type: 'ETF · Global',   px: 115.20, beta: 0.95, dur: 0, fx: 0.4, gold: 0 },
+    { sym: 'SPY',   name: 'SPDR S&P 500 ETF',       type: 'ETF · Equity',   px: 528.40, beta: 1.00, dur: 0, fx: 0, gold: 0, stooq: 'spy.us' },
+    { sym: 'VOO',   name: 'Vanguard S&P 500 ETF',   type: 'ETF · Equity',   px: 485.20, beta: 1.00, dur: 0, fx: 0, gold: 0, stooq: 'voo.us' },
+    { sym: 'VTI',   name: 'Vanguard Total Market',  type: 'ETF · Equity',   px: 262.10, beta: 1.00, dur: 0, fx: 0, gold: 0, stooq: 'vti.us' },
+    { sym: 'QQQ',   name: 'Invesco Nasdaq-100 ETF', type: 'ETF · Equity',   px: 456.80, beta: 1.20, dur: 0, fx: 0, gold: 0, stooq: 'qqq.us' },
+    { sym: 'IWM',   name: 'iShares Russell 2000',   type: 'ETF · Equity',   px: 218.30, beta: 1.15, dur: 0, fx: 0, gold: 0, stooq: 'iwm.us' },
+    { sym: 'DIA',   name: 'SPDR Dow Jones',         type: 'ETF · Equity',   px: 392.60, beta: 0.95, dur: 0, fx: 0, gold: 0, stooq: 'dia.us' },
+    { sym: 'EFA',   name: 'iShares MSCI EAFE',      type: 'ETF · Int\'l',   px:  81.30, beta: 0.90, dur: 0, fx: 1,   gold: 0, stooq: 'efa.us' },
+    { sym: 'EEM',   name: 'iShares MSCI EM',        type: 'ETF · EM',       px:  45.20, beta: 1.05, dur: 0, fx: 1,   gold: 0, stooq: 'eem.us' },
+    { sym: 'VEA',   name: 'Vanguard Developed',     type: 'ETF · Int\'l',   px:  52.40, beta: 0.90, dur: 0, fx: 1,   gold: 0, stooq: 'vea.us' },
+    { sym: 'VWO',   name: 'Vanguard Emerging',      type: 'ETF · EM',       px:  45.80, beta: 1.05, dur: 0, fx: 1,   gold: 0, stooq: 'vwo.us' },
+    { sym: 'ACWI',  name: 'iShares MSCI ACWI',      type: 'ETF · Global',   px: 115.20, beta: 0.95, dur: 0, fx: 0.4, gold: 0, stooq: 'acwi.us' },
     // Fixed-income ETFs
-    { sym: 'AGG',   name: 'iShares Core US Agg',    type: 'ETF · Bonds',    px:  99.40, beta: 0,    dur: 6.2, fx: 0, gold: 0 },
-    { sym: 'BND',   name: 'Vanguard Total Bond',    type: 'ETF · Bonds',    px:  73.10, beta: 0,    dur: 6.4, fx: 0, gold: 0 },
-    { sym: 'TLT',   name: '20+ Year Treasury',      type: 'ETF · Bonds',    px:  92.40, beta: 0,    dur: 17.5,fx: 0, gold: 0 },
-    { sym: 'IEF',   name: '7-10 Year Treasury',     type: 'ETF · Bonds',    px:  96.10, beta: 0,    dur: 7.8, fx: 0, gold: 0 },
-    { sym: 'SHY',   name: '1-3 Year Treasury',      type: 'ETF · Bonds',    px:  82.40, beta: 0,    dur: 1.9, fx: 0, gold: 0 },
-    { sym: 'LQD',   name: 'IG Corporate Bond ETF',  type: 'ETF · Bonds',    px: 108.20, beta: 0.05, dur: 8.5, fx: 0, gold: 0 },
-    { sym: 'HYG',   name: 'High Yield Bond ETF',    type: 'ETF · Bonds',    px:  77.80, beta: 0.25, dur: 3.8, fx: 0, gold: 0 },
-    { sym: 'TIP',   name: 'TIPS Bond ETF',          type: 'ETF · Bonds',    px: 108.60, beta: 0,    dur: 6.8, fx: 0, gold: 0 },
-    { sym: 'EMB',   name: 'EM USD Bond ETF',        type: 'ETF · Bonds',    px:  89.20, beta: 0.15, dur: 7.2, fx: 0, gold: 0 },
+    { sym: 'AGG',   name: 'iShares Core US Agg',    type: 'ETF · Bonds',    px:  99.40, beta: 0,    dur: 6.2, fx: 0, gold: 0, stooq: 'agg.us' },
+    { sym: 'BND',   name: 'Vanguard Total Bond',    type: 'ETF · Bonds',    px:  73.10, beta: 0,    dur: 6.4, fx: 0, gold: 0, stooq: 'bnd.us' },
+    { sym: 'TLT',   name: '20+ Year Treasury',      type: 'ETF · Bonds',    px:  92.40, beta: 0,    dur: 17.5,fx: 0, gold: 0, stooq: 'tlt.us' },
+    { sym: 'IEF',   name: '7-10 Year Treasury',     type: 'ETF · Bonds',    px:  96.10, beta: 0,    dur: 7.8, fx: 0, gold: 0, stooq: 'ief.us' },
+    { sym: 'SHY',   name: '1-3 Year Treasury',      type: 'ETF · Bonds',    px:  82.40, beta: 0,    dur: 1.9, fx: 0, gold: 0, stooq: 'shy.us' },
+    { sym: 'LQD',   name: 'IG Corporate Bond ETF',  type: 'ETF · Bonds',    px: 108.20, beta: 0.05, dur: 8.5, fx: 0, gold: 0, stooq: 'lqd.us' },
+    { sym: 'HYG',   name: 'High Yield Bond ETF',    type: 'ETF · Bonds',    px:  77.80, beta: 0.25, dur: 3.8, fx: 0, gold: 0, stooq: 'hyg.us' },
+    { sym: 'TIP',   name: 'TIPS Bond ETF',          type: 'ETF · Bonds',    px: 108.60, beta: 0,    dur: 6.8, fx: 0, gold: 0, stooq: 'tip.us' },
+    { sym: 'EMB',   name: 'EM USD Bond ETF',        type: 'ETF · Bonds',    px:  89.20, beta: 0.15, dur: 7.2, fx: 0, gold: 0, stooq: 'emb.us' },
     // Real assets / commodities
-    { sym: 'GLD',   name: 'SPDR Gold Shares',       type: 'Commodity',      px: 234.20, beta: 0.1,  dur: 0, fx: 0.3, gold: 1 },
-    { sym: 'IAU',   name: 'iShares Gold Trust',     type: 'Commodity',      px:  47.60, beta: 0.1,  dur: 0, fx: 0.3, gold: 1 },
-    { sym: 'SLV',   name: 'iShares Silver Trust',   type: 'Commodity',      px:  27.80, beta: 0.25, dur: 0, fx: 0.2, gold: 0.6 },
-    { sym: 'USO',   name: 'US Oil Fund',            type: 'Commodity',      px:  78.20, beta: 0.85, dur: 0, fx: 0,   gold: 0 },
-    { sym: 'UNG',   name: 'US Natural Gas Fund',    type: 'Commodity',      px:  15.40, beta: 0.70, dur: 0, fx: 0,   gold: 0 },
-    { sym: 'DBA',   name: 'DB Agriculture Fund',    type: 'Commodity',      px:  22.80, beta: 0.30, dur: 0, fx: 0,   gold: 0 },
-    { sym: 'COPX',  name: 'Global Copper Miners',   type: 'Commodity',      px:  46.40, beta: 1.30, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'GLD',   name: 'SPDR Gold Shares',       type: 'Commodity',      px: 234.20, beta: 0.1,  dur: 0, fx: 0.3, gold: 1,   stooq: 'gld.us' },
+    { sym: 'IAU',   name: 'iShares Gold Trust',     type: 'Commodity',      px:  47.60, beta: 0.1,  dur: 0, fx: 0.3, gold: 1,   stooq: 'iau.us' },
+    { sym: 'SLV',   name: 'iShares Silver Trust',   type: 'Commodity',      px:  27.80, beta: 0.25, dur: 0, fx: 0.2, gold: 0.6, stooq: 'slv.us' },
+    { sym: 'USO',   name: 'US Oil Fund',            type: 'Commodity',      px:  78.20, beta: 0.85, dur: 0, fx: 0,   gold: 0,   stooq: 'uso.us' },
+    { sym: 'UNG',   name: 'US Natural Gas Fund',    type: 'Commodity',      px:  15.40, beta: 0.70, dur: 0, fx: 0,   gold: 0,   stooq: 'ung.us' },
+    { sym: 'DBA',   name: 'DB Agriculture Fund',    type: 'Commodity',      px:  22.80, beta: 0.30, dur: 0, fx: 0,   gold: 0,   stooq: 'dba.us' },
+    { sym: 'COPX',  name: 'Global Copper Miners',   type: 'Commodity',      px:  46.40, beta: 1.30, dur: 0, fx: 0,   gold: 0,   stooq: 'copx.us' },
     // REITs
-    { sym: 'VNQ',   name: 'Vanguard Real Estate',   type: 'REIT',           px:  88.40, beta: 0.90, dur: 2.5, fx: 0, gold: 0 },
-    { sym: 'O',     name: 'Realty Income',          type: 'REIT',           px:  54.20, beta: 0.65, dur: 3.5, fx: 0, gold: 0 },
-    { sym: 'PLD',   name: 'Prologis',               type: 'REIT',           px: 108.20, beta: 1.00, dur: 2.5, fx: 0, gold: 0 },
+    { sym: 'VNQ',   name: 'Vanguard Real Estate',   type: 'REIT',           px:  88.40, beta: 0.90, dur: 2.5, fx: 0, gold: 0, stooq: 'vnq.us' },
+    { sym: 'O',     name: 'Realty Income',          type: 'REIT',           px:  54.20, beta: 0.65, dur: 3.5, fx: 0, gold: 0, stooq: 'o.us' },
+    { sym: 'PLD',   name: 'Prologis',               type: 'REIT',           px: 108.20, beta: 1.00, dur: 2.5, fx: 0, gold: 0, stooq: 'pld.us' },
     // Cash-like / money market
-    { sym: 'BIL',   name: '1-3 Month Treasury',     type: 'Cash',           px:  91.60, beta: 0,    dur: 0.1, fx: 0, gold: 0 },
-    { sym: 'SGOV',  name: '0-3 Month Treasury',     type: 'Cash',           px: 100.30, beta: 0,    dur: 0.1, fx: 0, gold: 0 },
+    { sym: 'BIL',   name: '1-3 Month Treasury',     type: 'Cash',           px:  91.60, beta: 0,    dur: 0.1, fx: 0, gold: 0, stooq: 'bil.us' },
+    { sym: 'SGOV',  name: '0-3 Month Treasury',     type: 'Cash',           px: 100.30, beta: 0,    dur: 0.1, fx: 0, gold: 0, stooq: 'sgov.us' },
     // Crypto
-    { sym: 'BTC',   name: 'Bitcoin',                type: 'Crypto',         px: 71248,  beta: 1.10, dur: 0, fx: 0,   gold: 0.25 },
-    { sym: 'ETH',   name: 'Ethereum',               type: 'Crypto',         px: 3720,   beta: 1.40, dur: 0, fx: 0,   gold: 0.15 },
-    { sym: 'SOL',   name: 'Solana',                 type: 'Crypto',         px: 182.40, beta: 1.90, dur: 0, fx: 0,   gold: 0 },
-    { sym: 'XRP',   name: 'XRP',                    type: 'Crypto',         px:   0.62, beta: 1.60, dur: 0, fx: 0,   gold: 0 },
-    { sym: 'ADA',   name: 'Cardano',                type: 'Crypto',         px:   0.46, beta: 1.70, dur: 0, fx: 0,   gold: 0 },
-    { sym: 'AVAX',  name: 'Avalanche',              type: 'Crypto',         px:  38.20, beta: 2.05, dur: 0, fx: 0,   gold: 0 },
-    { sym: 'DOT',   name: 'Polkadot',               type: 'Crypto',         px:   7.20, beta: 1.80, dur: 0, fx: 0,   gold: 0 },
-    { sym: 'LINK',  name: 'Chainlink',              type: 'Crypto',         px:  16.40, beta: 1.75, dur: 0, fx: 0,   gold: 0 },
-    { sym: 'MATIC', name: 'Polygon',                type: 'Crypto',         px:   0.72, beta: 1.80, dur: 0, fx: 0,   gold: 0 },
-    { sym: 'DOGE',  name: 'Dogecoin',               type: 'Crypto',         px:   0.14, beta: 2.10, dur: 0, fx: 0,   gold: 0 },
-    { sym: 'LTC',   name: 'Litecoin',               type: 'Crypto',         px:  84.20, beta: 1.30, dur: 0, fx: 0,   gold: 0.1 },
-    { sym: 'BCH',   name: 'Bitcoin Cash',           type: 'Crypto',         px: 412.60, beta: 1.30, dur: 0, fx: 0,   gold: 0.1 },
-    { sym: 'UNI',   name: 'Uniswap',                type: 'Crypto',         px:   8.40, beta: 1.80, dur: 0, fx: 0,   gold: 0 },
+    { sym: 'BTC',   name: 'Bitcoin',                type: 'Crypto',         px: 71248,  beta: 1.10, dur: 0, fx: 0,   gold: 0.25, coingecko: 'bitcoin' },
+    { sym: 'ETH',   name: 'Ethereum',               type: 'Crypto',         px: 3720,   beta: 1.40, dur: 0, fx: 0,   gold: 0.15, coingecko: 'ethereum' },
+    { sym: 'SOL',   name: 'Solana',                 type: 'Crypto',         px: 182.40, beta: 1.90, dur: 0, fx: 0,   gold: 0,    coingecko: 'solana' },
+    { sym: 'XRP',   name: 'XRP',                    type: 'Crypto',         px:   0.62, beta: 1.60, dur: 0, fx: 0,   gold: 0,    coingecko: 'ripple' },
+    { sym: 'ADA',   name: 'Cardano',                type: 'Crypto',         px:   0.46, beta: 1.70, dur: 0, fx: 0,   gold: 0,    coingecko: 'cardano' },
+    { sym: 'AVAX',  name: 'Avalanche',              type: 'Crypto',         px:  38.20, beta: 2.05, dur: 0, fx: 0,   gold: 0,    coingecko: 'avalanche-2' },
+    { sym: 'DOT',   name: 'Polkadot',               type: 'Crypto',         px:   7.20, beta: 1.80, dur: 0, fx: 0,   gold: 0,    coingecko: 'polkadot' },
+    { sym: 'LINK',  name: 'Chainlink',              type: 'Crypto',         px:  16.40, beta: 1.75, dur: 0, fx: 0,   gold: 0,    coingecko: 'chainlink' },
+    { sym: 'MATIC', name: 'Polygon',                type: 'Crypto',         px:   0.72, beta: 1.80, dur: 0, fx: 0,   gold: 0,    coingecko: 'matic-network' },
+    { sym: 'DOGE',  name: 'Dogecoin',               type: 'Crypto',         px:   0.14, beta: 2.10, dur: 0, fx: 0,   gold: 0,    coingecko: 'dogecoin' },
+    { sym: 'LTC',   name: 'Litecoin',               type: 'Crypto',         px:  84.20, beta: 1.30, dur: 0, fx: 0,   gold: 0.1,  coingecko: 'litecoin' },
+    { sym: 'BCH',   name: 'Bitcoin Cash',           type: 'Crypto',         px: 412.60, beta: 1.30, dur: 0, fx: 0,   gold: 0.1,  coingecko: 'bitcoin-cash' },
+    { sym: 'UNI',   name: 'Uniswap',                type: 'Crypto',         px:   8.40, beta: 1.80, dur: 0, fx: 0,   gold: 0,    coingecko: 'uniswap' },
     // Crypto-proxy equities / ETFs
-    { sym: 'IBIT',  name: 'iShares Bitcoin Trust',  type: 'Crypto ETF',     px:  42.80, beta: 1.10, dur: 0, fx: 0,   gold: 0.25 },
-    { sym: 'FBTC',  name: 'Fidelity Bitcoin',       type: 'Crypto ETF',     px:  65.40, beta: 1.10, dur: 0, fx: 0,   gold: 0.25 },
-    { sym: 'COIN',  name: 'Coinbase Global',        type: 'Equity · Crypto',px: 212.40, beta: 2.20, dur: 0, fx: 0,   gold: 0 },
-    { sym: 'MSTR',  name: 'MicroStrategy',          type: 'Equity · Crypto',px: 1640,   beta: 2.60, dur: 0, fx: 0,   gold: 0 },
-    // FX crosses (quoted as base→USD)
-    { sym: 'EURUSD',name: 'Euro vs USD',            type: 'FX',             px:   1.08, beta: 0,    dur: 0, fx: 1,   gold: 0 },
-    { sym: 'CHFUSD',name: 'Swiss Franc vs USD',     type: 'FX',             px:   1.10, beta: 0,    dur: 0, fx: 1,   gold: 0 },
-    { sym: 'GBPUSD',name: 'Sterling vs USD',        type: 'FX',             px:   1.26, beta: 0,    dur: 0, fx: 1,   gold: 0 },
-    { sym: 'USDJPY',name: 'Dollar vs Yen',          type: 'FX',             px: 154.20, beta: 0,    dur: 0, fx: 1,   gold: 0 },
-    { sym: 'USDSGD',name: 'Dollar vs Sing. Dollar', type: 'FX',             px:   1.34, beta: 0,    dur: 0, fx: 1,   gold: 0 },
-    { sym: 'USDCNH',name: 'Dollar vs Offshore Yuan',type: 'FX',             px:   7.22, beta: 0,    dur: 0, fx: 1,   gold: 0 },
+    { sym: 'IBIT',  name: 'iShares Bitcoin Trust',  type: 'Crypto ETF',     px:  42.80, beta: 1.10, dur: 0, fx: 0,   gold: 0.25, stooq: 'ibit.us' },
+    { sym: 'FBTC',  name: 'Fidelity Bitcoin',       type: 'Crypto ETF',     px:  65.40, beta: 1.10, dur: 0, fx: 0,   gold: 0.25, stooq: 'fbtc.us' },
+    { sym: 'COIN',  name: 'Coinbase Global',        type: 'Equity · Crypto',px: 212.40, beta: 2.20, dur: 0, fx: 0,   gold: 0,    stooq: 'coin.us' },
+    { sym: 'MSTR',  name: 'MicroStrategy',          type: 'Equity · Crypto',px: 1640,   beta: 2.60, dur: 0, fx: 0,   gold: 0,    stooq: 'mstr.us' },
+    // FX crosses (live from Frankfurter via the FX currency field)
+    { sym: 'EURUSD',name: 'Euro vs USD',            type: 'FX',             px:   1.08, beta: 0,    dur: 0, fx: 1,   gold: 0, fxBase: 'EUR' },
+    { sym: 'CHFUSD',name: 'Swiss Franc vs USD',     type: 'FX',             px:   1.10, beta: 0,    dur: 0, fx: 1,   gold: 0, fxBase: 'CHF' },
+    { sym: 'GBPUSD',name: 'Sterling vs USD',        type: 'FX',             px:   1.26, beta: 0,    dur: 0, fx: 1,   gold: 0, fxBase: 'GBP' },
+    { sym: 'USDJPY',name: 'Dollar vs Yen',          type: 'FX',             px: 154.20, beta: 0,    dur: 0, fx: 1,   gold: 0, fxQuote: 'JPY' },
+    { sym: 'USDSGD',name: 'Dollar vs Sing. Dollar', type: 'FX',             px:   1.34, beta: 0,    dur: 0, fx: 1,   gold: 0, fxQuote: 'SGD' },
+    { sym: 'USDCNH',name: 'Dollar vs Offshore Yuan',type: 'FX',             px:   7.22, beta: 0,    dur: 0, fx: 1,   gold: 0, fxQuote: 'CNY' },
   ];
   const universeBySym = new Map(universe.map((u) => [u.sym, u]));
 
@@ -153,29 +155,29 @@
   // sensitivities: beta (to equity market), dur (bond duration years),
   // fx (fraction of non-USD exposure), gold (1 if physical gold).
   const holdings = [
-    { sym: 'NVDA',  name: 'NVIDIA Corp.',           sector: 'Semiconductors',   qty:  6800, cost: 612.40, px: 892.40, beta: 1.55, dur: 0,    fx: 0,   gold: 0 },
-    { sym: 'MSFT',  name: 'Microsoft Corp.',        sector: 'Software',         qty: 12400, cost: 318.10, px: 422.75, beta: 1.05, dur: 0,    fx: 0,   gold: 0 },
-    { sym: 'AAPL',  name: 'Apple Inc.',             sector: 'Hardware',         qty: 18600, cost: 164.20, px: 208.90, beta: 1.20, dur: 0,    fx: 0,   gold: 0 },
-    { sym: 'LVMH',  name: 'LVMH Moët Hennessy',     sector: 'Luxury · Paris',   qty:  9200, cost: 642.00, px: 748.40, beta: 0.90, dur: 0,    fx: 1,   gold: 0 },
-    { sym: 'NESN',  name: 'Nestlé SA',              sector: 'Staples · SIX',    qty: 14800, cost:  98.70, px: 104.12, beta: 0.55, dur: 0,    fx: 1,   gold: 0 },
-    { sym: 'BRK.B', name: 'Berkshire Hathaway B',   sector: 'Conglomerate',     qty:  8400, cost: 312.20, px: 408.30, beta: 0.85, dur: 0,    fx: 0,   gold: 0 },
-    { sym: 'ASML',  name: 'ASML Holding',           sector: 'Semi Equip · AEX', qty:  3100, cost: 642.10, px: 910.20, beta: 1.40, dur: 0,    fx: 1,   gold: 0 },
+    { sym: 'NVDA',  name: 'NVIDIA Corp.',           sector: 'Semiconductors',   qty:  6800, cost: 612.40, px: 892.40, beta: 1.55, dur: 0,    fx: 0,   gold: 0, stooq: 'nvda.us' },
+    { sym: 'MSFT',  name: 'Microsoft Corp.',        sector: 'Software',         qty: 12400, cost: 318.10, px: 422.75, beta: 1.05, dur: 0,    fx: 0,   gold: 0, stooq: 'msft.us' },
+    { sym: 'AAPL',  name: 'Apple Inc.',             sector: 'Hardware',         qty: 18600, cost: 164.20, px: 208.90, beta: 1.20, dur: 0,    fx: 0,   gold: 0, stooq: 'aapl.us' },
+    { sym: 'LVMH',  name: 'LVMH Moët Hennessy',     sector: 'Luxury · Paris',   qty:  9200, cost: 642.00, px: 748.40, beta: 0.90, dur: 0,    fx: 1,   gold: 0, stooq: 'mc.fr' },
+    { sym: 'NESN',  name: 'Nestlé SA',              sector: 'Staples · SIX',    qty: 14800, cost:  98.70, px: 104.12, beta: 0.55, dur: 0,    fx: 1,   gold: 0, stooq: 'nesn.ch' },
+    { sym: 'BRK.B', name: 'Berkshire Hathaway B',   sector: 'Conglomerate',     qty:  8400, cost: 312.20, px: 408.30, beta: 0.85, dur: 0,    fx: 0,   gold: 0, stooq: 'brk-b.us' },
+    { sym: 'ASML',  name: 'ASML Holding',           sector: 'Semi Equip · AEX', qty:  3100, cost: 642.10, px: 910.20, beta: 1.40, dur: 0,    fx: 1,   gold: 0, stooq: 'asml.us' },
     { sym: 'UST10', name: 'US Treasury 4.25% 2034', sector: 'Govt Bond',        qty: 75000, cost:  99.10, px: 101.42, beta: 0,    dur: 9.5,  fx: 0,   gold: 0 },
-    { sym: 'GOLD',  name: 'Physical Gold (LBMA)',   sector: 'Commodity · oz',   qty:  8200, cost: 1980.0, px: 2342.10, beta: 0.1,  dur: 0,    fx: 0.3, gold: 1 },
-    { sym: 'TSLA',  name: 'Tesla Inc.',             sector: 'Autos',            qty:  5400, cost: 242.80, px: 174.60, beta: 1.95, dur: 0,    fx: 0,   gold: 0 },
+    { sym: 'GOLD',  name: 'Physical Gold (LBMA)',   sector: 'Commodity · oz',   qty:  8200, cost: 1980.0, px: 2342.10, beta: 0.1,  dur: 0,    fx: 0.3, gold: 1, stooq: 'xauusd' },
+    { sym: 'TSLA',  name: 'Tesla Inc.',             sector: 'Autos',            qty:  5400, cost: 242.80, px: 174.60, beta: 1.95, dur: 0,    fx: 0,   gold: 0, stooq: 'tsla.us' },
   ];
 
   // Watchlist (separate from holdings)
   const watchlist = [
-    { sym: 'SPX',  name: 'S&P 500 Index',       px: 5284.12, pct:  0.31 },
-    { sym: 'SX5E', name: 'Euro Stoxx 50',       px: 5010.44, pct:  0.22 },
-    { sym: 'NKY',  name: 'Nikkei 225',          px: 39412.7, pct: -0.18 },
-    { sym: 'BTC',  name: 'Bitcoin · USD',       px: 71248.0, pct:  1.42 },
-    { sym: 'ETH',  name: 'Ethereum · USD',      px:  3720.0, pct:  2.18 },
-    { sym: 'SOL',  name: 'Solana · USD',        px:   182.4, pct:  3.04 },
-    { sym: 'GOLD', name: 'Gold Spot · oz',      px: 2342.10, pct:  0.64 },
-    { sym: 'CL',   name: 'WTI Crude · bbl',     px:   83.12, pct: -0.44 },
-    { sym: 'DXY',  name: 'US Dollar Index',     px:  104.21, pct: -0.08 },
+    { sym: 'SPX',  name: 'S&P 500 Index',       px: 5284.12, pct:  0.31, stooq: '^spx' },
+    { sym: 'SX5E', name: 'Euro Stoxx 50',       px: 5010.44, pct:  0.22, stooq: '^stx50e' },
+    { sym: 'NKY',  name: 'Nikkei 225',          px: 39412.7, pct: -0.18, stooq: '^nkx' },
+    { sym: 'BTC',  name: 'Bitcoin · USD',       px: 71248.0, pct:  1.42, coingecko: 'bitcoin' },
+    { sym: 'ETH',  name: 'Ethereum · USD',      px:  3720.0, pct:  2.18, coingecko: 'ethereum' },
+    { sym: 'SOL',  name: 'Solana · USD',        px:   182.4, pct:  3.04, coingecko: 'solana' },
+    { sym: 'GOLD', name: 'Gold Spot · oz',      px: 2342.10, pct:  0.64, stooq: 'xauusd' },
+    { sym: 'CL',   name: 'WTI Crude · bbl',     px:   83.12, pct: -0.44, stooq: 'cl.f' },
+    { sym: 'DXY',  name: 'US Dollar Index',     px:  104.21, pct: -0.08, stooq: '^dxy' },
     { sym: 'UST10',name: 'US 10Y Yield',        px:    4.28, pct:  0.02, isYield: true },
   ];
 
@@ -2312,7 +2314,7 @@
   });
 
   // ── Preferences ─────────────────────────────────────────────────
-  const defaults = { ccy: 'USD', theme: savedTheme || 'day', tick: 1600, fmt: 'en-US' };
+  const defaults = { ccy: 'USD', theme: savedTheme || 'day', tick: 1600, fmt: 'en-US', live: true, liveInterval: 60_000 };
   const prefs = Object.assign({}, defaults, storageGet(PREF_KEY, {}));
 
   const applyPrefs = () => {
@@ -2338,6 +2340,8 @@
     $('#pref-theme').value = prefs.theme;
     $('#pref-tick').value = String(prefs.tick);
     $('#pref-fmt').value = prefs.fmt;
+    const liveInp = $('#pref-live');      if (liveInp) liveInp.checked = !!prefs.live;
+    const liveInt = $('#pref-live-int');  if (liveInt) liveInt.value = String(prefs.liveInterval || 60000);
     prefsModal.hidden = false;
   };
   $('#prefs-btn')?.addEventListener('click', openPrefs);
@@ -2349,6 +2353,8 @@
       theme: $('#pref-theme').value,
       tick: +$('#pref-tick').value,
       fmt: $('#pref-fmt').value,
+      live: !!$('#pref-live')?.checked,
+      liveInterval: +($('#pref-live-int')?.value || 60000),
     };
     Object.assign(prefs, next);
     storageSet(PREF_KEY, prefs);
@@ -2356,6 +2362,8 @@
     // Re-arm tick interval
     if (tickTimer) clearInterval(tickTimer);
     tickTimer = prefs.tick > 0 ? setInterval(tickStep, prefs.tick) : null;
+    // Re-arm live pricing
+    startLive();
     prefsModal.hidden = true;
   });
   $('#prefs-reset')?.addEventListener('click', () => {
@@ -2406,6 +2414,239 @@
 
   // Apply any saved preferences at the end so first render is stable
   applyPrefs();
+
+  // ── Live pricing adapter ────────────────────────────────────────
+  // Three free, CORS-friendly providers; each failure is non-fatal and
+  // simply leaves the simulated mean-reverting walk in charge.
+  //   Crypto      → CoinGecko  api.coingecko.com/api/v3/simple/price
+  //   Equities/ETF→ Stooq      stooq.com/q/l  (CSV, single call per batch)
+  //   FX          → Frankfurter api.frankfurter.app/latest
+  const liveStatus = { state: 'idle', lastSync: null, errors: 0, counts: { crypto: 0, equity: 0, fx: 0 } };
+
+  const lookupProvider = (sym, row) => {
+    // row may be a holding, watchlist item, or universe entry
+    const u = row || universeBySym.get(sym) || watchlist.find((w) => w.sym === sym) || null;
+    if (!u) return {};
+    return { stooq: u.stooq, coingecko: u.coingecko, fxBase: u.fxBase, fxQuote: u.fxQuote };
+  };
+
+  // Fetch crypto prices in one batch call
+  const fetchCrypto = async (ids) => {
+    if (!ids.length) return new Map();
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(ids.join(','))}&vs_currencies=usd&include_24hr_change=true`;
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const json = await res.json();
+      const out = new Map();
+      ids.forEach((id) => {
+        const row = json[id];
+        if (row && Number.isFinite(row.usd)) out.set(id, { px: row.usd, pct: row.usd_24h_change });
+      });
+      return out;
+    } catch (e) {
+      liveStatus.errors++;
+      return new Map();
+    }
+  };
+
+  // Fetch a batch of equities/ETFs via Stooq CSV; falls back to single
+  // requests if the batch endpoint misbehaves.
+  const parseStooqCsv = (text) => {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+    const head = lines[0].split(',');
+    const iSym   = head.findIndex((h) => /symbol/i.test(h));
+    const iClose = head.findIndex((h) => /close/i.test(h));
+    const iOpen  = head.findIndex((h) => /open/i.test(h));
+    return lines.slice(1).map((line) => {
+      const cols = line.split(',');
+      const sym   = (cols[iSym] || '').trim().toLowerCase();
+      const close = parseFloat(cols[iClose]);
+      const open  = parseFloat(cols[iOpen]);
+      if (!sym || !Number.isFinite(close) || close <= 0) return null;
+      return { sym, close, open };
+    }).filter(Boolean);
+  };
+  const fetchStooq = async (ids) => {
+    if (!ids.length) return new Map();
+    const out = new Map();
+    // Stooq accepts up to ~50 symbols per call; chunk to be safe.
+    const chunkSize = 40;
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
+      const url = `https://stooq.com/q/l/?s=${encodeURIComponent(chunk.join(','))}&f=sd2t2ohlc&h&e=csv`;
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const text = await res.text();
+        parseStooqCsv(text).forEach((r) => {
+          const pct = r.open > 0 ? (r.close / r.open - 1) * 100 : 0;
+          out.set(r.sym, { px: r.close, pct });
+        });
+      } catch (e) {
+        liveStatus.errors++;
+      }
+    }
+    return out;
+  };
+
+  // Frankfurter returns USD→X rates. We derive both BASE→USD (1/rate) and
+  // USD→QUOTE (rate) in one call.
+  const fetchFx = async (codes) => {
+    if (!codes.length) return new Map();
+    const url = `https://api.frankfurter.app/latest?from=USD&to=${encodeURIComponent([...new Set(codes)].join(','))}`;
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const json = await res.json();
+      const out = new Map();
+      Object.entries(json.rates || {}).forEach(([code, rate]) => out.set(code, rate));
+      return out;
+    } catch (e) {
+      liveStatus.errors++;
+      return new Map();
+    }
+  };
+
+  // Orchestrator — decides which symbols to fetch based on live book +
+  // watchlist, calls the three providers in parallel, and folds results
+  // into the anchors so the simulated walk mean-reverts toward live.
+  const syncLivePrices = async () => {
+    liveStatus.state = 'syncing';
+    updateLiveChip();
+
+    // Collect unique provider IDs
+    const cryptoIds = new Set();
+    const stooqIds  = new Set();
+    const fxCodes   = new Set();
+    const wantUsd = prefs.ccy !== 'USD' ? [prefs.ccy] : [];
+    fxCodes.add('EUR'); fxCodes.add('CHF'); fxCodes.add('GBP'); fxCodes.add('JPY'); fxCodes.add('SGD');
+    wantUsd.forEach((c) => fxCodes.add(c));
+
+    const tagFrom = (row) => {
+      const p = lookupProvider(row.sym, row);
+      if (p.coingecko) cryptoIds.add(p.coingecko);
+      if (p.stooq)     stooqIds.add(p.stooq);
+      if (p.fxBase)    fxCodes.add(p.fxBase);
+      if (p.fxQuote)   fxCodes.add(p.fxQuote);
+    };
+    holdings.forEach(tagFrom);
+    watchlist.forEach(tagFrom);
+
+    const [crypto, stocks, fx] = await Promise.all([
+      fetchCrypto([...cryptoIds]),
+      fetchStooq([...stooqIds]),
+      fetchFx([...fxCodes]),
+    ]);
+
+    // Apply to holdings
+    let cryptoN = 0, equityN = 0, fxN = 0;
+    const applyLivePrice = (row) => {
+      if (row.isManual) return; // respect user overrides
+      const p = lookupProvider(row.sym, row);
+      let newPx = null, newPct = null;
+      if (p.coingecko && crypto.has(p.coingecko)) {
+        const v = crypto.get(p.coingecko);
+        newPx = v.px; if (Number.isFinite(v.pct)) newPct = v.pct;
+        cryptoN++;
+      } else if (p.stooq && stocks.has(p.stooq)) {
+        const v = stocks.get(p.stooq);
+        newPx = v.px; newPct = v.pct;
+        equityN++;
+      } else if (p.fxBase && fx.has(p.fxBase)) {
+        // Row is BASE→USD → rate is 1 / (USD→BASE)
+        const usdPerBase = 1 / fx.get(p.fxBase);
+        newPx = usdPerBase;
+        fxN++;
+      } else if (p.fxQuote && fx.has(p.fxQuote)) {
+        newPx = fx.get(p.fxQuote);
+        fxN++;
+      }
+      if (newPx != null && Number.isFinite(newPx) && newPx > 0) {
+        row.px = newPx;
+        if (anchors.has(row.sym))       anchors.set(row.sym, newPx);
+        if (watchAnchors.has(row.sym))  watchAnchors.set(row.sym, newPx);
+        if (Number.isFinite(newPct))    row.pct = newPct;
+      }
+    };
+    holdings.forEach(applyLivePrice);
+    watchlist.forEach(applyLivePrice);
+
+    // Apply FX rates to the preferences conversion layer. The formatter
+    // reads `fxRates` at call time, so mutating keys in place is enough
+    // for subsequent renders to pick up the new rates.
+    fx.forEach((rate, code) => {
+      if (Number.isFinite(rate) && rate > 0) fxRates[code] = rate;
+    });
+
+    liveStatus.counts = { crypto: cryptoN, equity: equityN, fx: fxN };
+    liveStatus.state = (cryptoN + equityN + fxN) > 0 ? 'live' : 'offline';
+    liveStatus.lastSync = new Date();
+
+    // Re-render everything downstream
+    renderHoldings(); bindRowRemove(); applyRowTags();
+    renderWatch(); bindWatchRemove();
+    if (holdingsView === 'heat') renderHeatmap();
+    recomputeAnalytics();
+    liveTick();
+    updateLiveChip();
+  };
+
+  // Chip UI + interval management
+  const updateLiveChip = () => {
+    const chip = $('#live-chip');
+    if (!chip) return;
+    const { state, lastSync, counts } = liveStatus;
+    const dot = chip.querySelector('.dot');
+    const lbl = chip.querySelector('.lbl');
+    const tip = chip.querySelector('.tip');
+    const time = lastSync ? lastSync.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+    const total = counts.crypto + counts.equity + counts.fx;
+    if (state === 'syncing') {
+      dot.className = 'dot';
+      lbl.textContent = 'Syncing…';
+      tip.textContent = 'Fetching live prices';
+    } else if (state === 'live') {
+      dot.className = 'dot dot--live';
+      lbl.textContent = 'Live';
+      tip.textContent = `${total} symbols · ${time}`;
+    } else if (state === 'offline') {
+      dot.className = 'dot';
+      lbl.textContent = 'Offline';
+      tip.textContent = 'Using simulated prices';
+    } else {
+      dot.className = 'dot';
+      lbl.textContent = prefs.live ? 'Ready' : 'Simulated';
+      tip.textContent = prefs.live ? 'Click to sync now' : 'Live pricing is off';
+    }
+    chip.classList.toggle('is-live', state === 'live');
+    chip.classList.toggle('is-offline', state === 'offline');
+  };
+
+  let liveTimer = null;
+  const stopLive = () => { if (liveTimer) { clearInterval(liveTimer); liveTimer = null; } };
+  const startLive = () => {
+    stopLive();
+    if (!prefs.live) { liveStatus.state = 'idle'; updateLiveChip(); return; }
+    // Kick once immediately, then poll
+    syncLivePrices();
+    liveTimer = setInterval(syncLivePrices, Math.max(30_000, prefs.liveInterval || 60_000));
+  };
+
+  $('#live-chip')?.addEventListener('click', () => {
+    if (!prefs.live) {
+      prefs.live = true;
+      storageSet(PREF_KEY, prefs);
+      startLive();
+    } else {
+      syncLivePrices();
+    }
+  });
+
+  // Start live pricing after all render functions are in place
+  if (prefs.live) startLive();
+  else            updateLiveChip();
 
   // ── Service Worker (offline app shell) ──────────────────────────
   // Only register over http(s): file:// origins reject service workers.

@@ -118,8 +118,10 @@
           <input placeholder="Search holdings, funds, documents…" />
           <kbd>⌘K</kbd>
         </label>
-        <button class="icon-btn" title="Market status" aria-label="Market status">
-          <span class="dot dot--live"></span><span class="small">NYSE Open</span>
+        <button id="live-chip" class="icon-btn live-chip" title="Live pricing" aria-label="Live pricing">
+          <span class="dot dot--live"></span>
+          <span class="lbl small">Live</span>
+          <span class="tip small muted">Fetching…</span>
         </button>
         <button id="theme-toggle" class="theme-toggle" title="Toggle day/night" aria-label="Toggle theme">
           <svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.5 4.5l2.2 2.2M17.3 17.3l2.2 2.2M4.5 19.5l2.2-2.2M17.3 6.7l2.2-2.2"/></svg>
@@ -894,6 +896,21 @@
                   <option value="en-GB">English (UK)</option>
                   <option value="de-CH">German (Switzerland)</option>
                   <option value="fr-FR">French (France)</option>
+                </select>
+              </label>
+              <label class="field field--wide check">
+                <input type="checkbox" id="pref-live" />
+                <span class="lbl">
+                  <strong>Use live pricing</strong>
+                  <span class="muted">CoinGecko (crypto) · Stooq (equities / ETFs / commodities) · Frankfurter (FX). Data is free and delayed; see each provider's terms.</span>
+                </span>
+              </label>
+              <label class="field"><span>Live refresh interval</span>
+                <select id="pref-live-int">
+                  <option value="30000">30 seconds</option>
+                  <option value="60000" selected>1 minute</option>
+                  <option value="120000">2 minutes</option>
+                  <option value="300000">5 minutes</option>
                 </select>
               </label>
             </div>

@@ -1474,6 +1474,58 @@ body[data-theme="day"][data-design="broadsheet"] .card{
   line-height: 1.4;
 }
 
+/* Live pricing chip ---------------------------------------------- */
+.live-chip{
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--bg-1);
+  color: var(--ink-1); font-size: 12px;
+  line-height: 1;
+}
+.live-chip:hover{ background: var(--bg-2) }
+.live-chip .lbl{ font-weight: 600 }
+.live-chip .tip{ color: var(--ink-3); font-size: 11px }
+.live-chip.is-live .dot{ background: var(--up); box-shadow: 0 0 0 0 rgba(76,183,135,.55); animation: pulse 1.8s ease-out infinite }
+.live-chip.is-offline{ border-color: rgba(216,107,107,.35); background: var(--down-soft) }
+.live-chip.is-offline .dot{ background: var(--down); animation: none }
+.live-chip.is-offline .lbl{ color: var(--down) }
+@media (max-width: 860px){ .live-chip .tip{ display: none } }
+
+/* Preferences checkbox field ------------------------------------- */
+.field.check{
+  flex-direction: row; align-items: flex-start; gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--bg-1);
+}
+.field.check input[type="checkbox"]{
+  appearance: none; -webkit-appearance: none;
+  width: 18px; height: 18px; min-height: 0;
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  margin: 1px 0 0;
+  padding: 0;
+  background: var(--bg-2);
+  cursor: pointer;
+  position: relative;
+  transition: border-color .15s, background .15s;
+}
+.field.check input[type="checkbox"]:checked{
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.field.check input[type="checkbox"]:checked::after{
+  content: ""; position: absolute; left: 4px; top: 0;
+  width: 6px; height: 11px; border: solid #fff;
+  border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.field.check .lbl{
+  display: flex; flex-direction: column; gap: 2px;
+  font-size: 13px;
+}
+.field.check .lbl .muted{ font-size: 11.5px; line-height: 1.4 }
+
 /* Toast ----------------------------------------------------------- */
 .toast-wrap{
   position: fixed;
