@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - claude/high-effort-session-rUlkW
+      - claude/portfolio-dashboard-mockups-jDnnl
   workflow_dispatch:
 
 permissions:
@@ -27,6 +28,8 @@ jobs:
         run: |
           mkdir _site
           cp index.html styles.css app.js sw.js _site/
+          # Mockups directory (charts-forward portfolio dashboard comps)
+          cp -R mockups _site/mockups
           # SPA-style fallback so deep links always serve the app
           cp index.html _site/404.html
 
