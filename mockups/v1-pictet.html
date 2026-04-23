@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Xie Family Office — Private Wealth (Pictet-style)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./_vendor/tailwind.css" />
+<script src="./_vendor/echarts.min.js"></script>
+<script src="./_vendor/chart.umd.js"></script>
+<style>
+  :root {
+    --warm:   #FBF8F3;
+    --paper:  #F3EDE1;
+    --ink:    #0B1F3B;
+    --ink2:   #1C2E4A;
+    --gold:   #B08D57;
+    --gold2:  #D9B87A;
+    --rule:   #E4DCC9;
+    --muted:  #6B6558;
+    --pos:    #3F6B4B;
+    --neg:    #8C3A2E;
+  }
+  html, body { background: var(--warm); color: var(--ink); font-family: "Inter", sans-serif; }
+  .serif    { font-family: "Cormorant Garamond", serif; }
+  .mono     { font-family: "IBM Plex Mono", monospace; font-feature-settings: "tnum"; }
+  .tnum     { font-variant-numeric: tabular-nums; }
+  .hairline { border-color: var(--rule); }
+  .card     { background: #FFFDF8; border: 1px solid var(--rule); }
+  .wordmark { letter-spacing: .02em; }
+  .kpi-label{ letter-spacing: .18em; text-transform: uppercase; font-size: 10px; color: var(--muted); }
+  .dotpos   { background: var(--pos); }
+  .dotneg   { background: var(--neg); }
+  .ledger   { border-collapse: separate; border-spacing: 0; }
+  .ledger th, .ledger td { border-bottom: 1px solid var(--rule); padding: 10px 12px; }
+  .ledger th { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); font-weight: 500; text-align: left; }
+  .spark    { height: 28px; width: 100px; }
+  .live-dot { width: 6px; height: 6px; border-radius: 999px; background: #3F6B4B; box-shadow: 0 0 0 3px rgba(63,107,75,.18); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- Masthead -->
+<header class="px-10 pt-10 pb-6 border-b hairline">
+  <div class="flex items-end justify-between">
+    <div>
+      <div class="serif text-[34px] leading-none text-[color:var(--ink)] wordmark">Xie Family Office</div>
+      <div class="mt-2 text-[11px] tracking-[.28em] uppercase text-[color:var(--muted)]">Private Wealth · Conservatio et Crescentia</div>
+    </div>
+    <div class="flex items-center gap-6">
+      <div class="text-right">
+        <div class="kpi-label">As of</div>
+        <div id="asof" class="mono text-sm mt-1">—</div>
+      </div>
+      <div class="flex items-center gap-2 text-[11px] text-[color:var(--muted)]">
+        <span class="live-dot"></span><span id="feed">connecting…</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="px-10 py-8 grid grid-cols-12 gap-6">
+
+  <!-- Hero chart -->
+  <section class="col-span-12 lg:col-span-8 card p-6">
+    <div class="flex items-baseline justify-between">
+      <div>
+        <div class="kpi-label">Portfolio Value · Trailing Twelve Months</div>
+        <div class="serif text-[40px] leading-none mt-2 tnum" id="hero-total">$12,400,000</div>
+        <div class="mt-2 text-sm mono"><span id="hero-chg" class="text-[color:var(--pos)]">+0.00%</span> <span class="text-[color:var(--muted)]">vs. 12 months prior</span></div>
+      </div>
+      <div class="flex items-center gap-1 text-[11px] mono">
+        <button class="px-2 py-1 border hairline bg-[color:var(--paper)]">12M</button>
+        <button class="px-2 py-1 border hairline">6M</button>
+        <button class="px-2 py-1 border hairline">3M</button>
+        <button class="px-2 py-1 border hairline">1M</button>
+      </div>
+    </div>
+    <div id="hero" class="mt-4" style="height: 360px;"></div>
+  </section>
+
+  <!-- Allocation donut -->
+  <aside class="col-span-12 lg:col-span-4 card p-6">
+    <div class="kpi-label">Allocation by Asset Class</div>
+    <div id="donut" style="height: 320px;" class="mt-2"></div>
+    <ul id="alloc-legend" class="mt-2 space-y-1 text-sm"></ul>
+  </aside>
+
+  <!-- KPI tiles -->
+  <section class="col-span-12 grid grid-cols-3 gap-6">
+    <div class="card p-6">
+      <div class="kpi-label">Total Value</div>
+      <div class="serif text-[38px] leading-none mt-3 tnum" id="kpi-total">—</div>
+      <div class="mt-2 text-xs mono text-[color:var(--muted)]">Including cash & digital assets</div>
+    </div>
+    <div class="card p-6">
+      <div class="kpi-label">YTD Return</div>
+      <div class="serif text-[38px] leading-none mt-3 tnum" id="kpi-ytd">—</div>
+      <div class="mt-2 text-xs mono text-[color:var(--muted)]">Net of simulated fees</div>
+    </div>
+    <div class="card p-6">
+      <div class="kpi-label">Sharpe Ratio</div>
+      <div class="serif text-[38px] leading-none mt-3 tnum" id="kpi-sharpe">—</div>
+      <div class="mt-2 text-xs mono text-[color:var(--muted)]">Rf 4.50%, trailing 12M</div>
+    </div>
+  </section>
+
+  <!-- Holdings -->
+  <section class="col-span-12 card p-6">
+    <div class="flex items-baseline justify-between mb-2">
+      <div class="kpi-label">Holdings Ledger</div>
+      <div class="text-[11px] mono text-[color:var(--muted)]" id="feed-detail">—</div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="ledger w-full text-sm">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Name</th>
+            <th>Class</th>
+            <th class="text-right">Qty</th>
+            <th class="text-right">Price</th>
+            <th class="text-right">Market Value</th>
+            <th class="text-right">Weight</th>
+            <th>30-Day</th>
+          </tr>
+        </thead>
+        <tbody id="holdings-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="col-span-12 text-[11px] text-[color:var(--muted)] pt-4 border-t hairline flex justify-between">
+    <span>Xie Family Office · Confidential</span>
+    <span>Figures illustrative. Equity quotes via Yahoo Finance; crypto via CoinGecko.</span>
+  </footer>
+</main>
+
+<script src="./_shared/data.js"></script>
+<script src="./_shared/pricing.js"></script>
+<script>
+(function () {
+  const D = window.XFO_DATA;
+  const fmt = D.fmt;
+
+  // Hero chart
+  const hero = echarts.init(document.getElementById("hero"), null, { renderer: "canvas" });
+  const heroDates = D.dates.map(d => d.toISOString().slice(0, 10));
+  hero.setOption({
+    animationDuration: 700,
+    grid: { left: 56, right: 24, top: 16, bottom: 36 },
+    xAxis: {
+      type: "category",
+      data: heroDates,
+      boundaryGap: false,
+      axisLine: { lineStyle: { color: "#C9BFA8" } },
+      axisLabel: { color: "#6B6558", fontFamily: "IBM Plex Mono", fontSize: 10 },
+      splitLine: { show: false },
+    },
+    yAxis: {
+      type: "value",
+      scale: true,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { color: "#6B6558", fontFamily: "IBM Plex Mono", fontSize: 10, formatter: v => fmt.moneyShort(v) },
+      splitLine: { lineStyle: { color: "#ECE3D0" } },
+    },
+    tooltip: {
+      trigger: "axis",
+      backgroundColor: "#FFFDF8",
+      borderColor: "#E4DCC9",
+      textStyle: { color: "#0B1F3B", fontFamily: "IBM Plex Mono" },
+      formatter: p => `<div style="font-family:Inter;letter-spacing:.18em;text-transform:uppercase;font-size:10px;color:#6B6558">${p[0].axisValue}</div><div style="font-family:Cormorant Garamond;font-size:22px;margin-top:4px">${fmt.money(p[0].data)}</div>`,
+    },
+    series: [{
+      type: "line", smooth: true, symbol: "none",
+      data: D.navSeries,
+      lineStyle: { color: "#0B1F3B", width: 2 },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: "rgba(176,141,87,0.26)" },
+          { offset: 1, color: "rgba(176,141,87,0.02)" },
+        ]),
+      },
+    }],
+  });
+
+  // Donut
+  const donut = echarts.init(document.getElementById("donut"));
+  const classNow = {};
+  for (const cls of Object.keys(D.classSeries)) classNow[cls] = D.classSeries[cls][D.classSeries[cls].length - 1];
+  const classEntries = Object.entries(classNow);
+  const palette = ["#0B1F3B", "#B08D57", "#3F6B4B", "#7B6B4A", "#4A5E7A", "#C9A96B"];
+  donut.setOption({
+    tooltip: { trigger: "item", formatter: p => `${p.name}<br/>${fmt.money(p.value)} · ${p.percent}%` },
+    legend: { show: false },
+    series: [{
+      type: "pie",
+      radius: ["62%", "85%"],
+      avoidLabelOverlap: true,
+      itemStyle: { borderColor: "#FFFDF8", borderWidth: 2 },
+      label: { show: false },
+      labelLine: { show: false },
+      data: classEntries.map(([name, v], i) => ({ name, value: v, itemStyle: { color: palette[i % palette.length] } })),
+    }],
+    graphic: [
+      { type: "text", left: "center", top: "44%", style: { text: "Total", fill: "#6B6558", font: "10px Inter", fontWeight: 500 } },
+      { type: "text", left: "center", top: "50%", style: { text: fmt.moneyShort(D.totalValue), fill: "#0B1F3B", font: "600 22px \"Cormorant Garamond\"" } },
+    ],
+  });
+  const legend = document.getElementById("alloc-legend");
+  legend.innerHTML = classEntries.map(([name, v], i) => {
+    const pct = (v / D.totalValue) * 100;
+    return `<li class="flex items-center justify-between">
+      <span class="flex items-center gap-2"><span style="width:8px;height:8px;background:${palette[i%palette.length]};display:inline-block"></span>${name}</span>
+      <span class="mono tnum text-[color:var(--muted)]">${pct.toFixed(1)}%</span>
+    </li>`;
+  }).join("");
+
+  // KPI tiles
+  document.getElementById("kpi-total").textContent  = fmt.money(D.totalValue);
+  document.getElementById("hero-total").textContent = fmt.money(D.totalValue);
+  const ytdEl = document.getElementById("kpi-ytd");
+  ytdEl.textContent = fmt.signedPct(D.metrics.ytdReturn, 2);
+  ytdEl.style.color = D.metrics.ytdReturn >= 0 ? "var(--pos)" : "var(--neg)";
+  document.getElementById("kpi-sharpe").textContent = D.metrics.sharpe.toFixed(2);
+  const chg12 = D.navSeries[D.navSeries.length - 1] / D.navSeries[0] - 1;
+  const chgEl = document.getElementById("hero-chg");
+  chgEl.textContent = fmt.signedPct(chg12, 2);
+  chgEl.className = (chg12 >= 0 ? "text-[color:var(--pos)]" : "text-[color:var(--neg)]");
+
+  // Holdings table + sparklines
+  const body = document.getElementById("holdings-body");
+  body.innerHTML = "";
+  const sparkRefs = [];
+  for (const h of D.HOLDINGS) {
+    const price = D.priceSeries[h.symbol].slice(-30);
+    const mv = h.qty * h.seedPrice;
+    const weight = mv / D.totalValue;
+    const up = price[price.length - 1] >= price[0];
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono font-medium">${h.symbol}</td>
+      <td>${h.name}</td>
+      <td class="text-[color:var(--muted)]">${h.class}</td>
+      <td class="text-right mono tnum">${h.symbol === "CASH" ? fmt.money(h.qty) : h.qty.toLocaleString()}</td>
+      <td class="text-right mono tnum" data-price="${h.symbol}">${fmt.money(h.seedPrice, h.symbol === "CASH" ? 2 : 2)}</td>
+      <td class="text-right mono tnum" data-mv="${h.symbol}">${fmt.money(mv)}</td>
+      <td class="text-right mono tnum">${(weight * 100).toFixed(1)}%</td>
+      <td><canvas class="spark" width="200" height="56"></canvas></td>`;
+    body.appendChild(tr);
+    const canvas = tr.querySelector("canvas");
+    sparkRefs.push({ canvas, symbol: h.symbol, up });
+  }
+
+  for (const { canvas, symbol, up } of sparkRefs) {
+    const series = D.priceSeries[symbol].slice(-30);
+    new Chart(canvas, {
+      type: "line",
+      data: { labels: series.map((_, i) => i), datasets: [{ data: series, borderColor: up ? "#3F6B4B" : "#8C3A2E", borderWidth: 1.3, tension: 0.35, pointRadius: 0, fill: false }] },
+      options: { plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } }, animation: false, elements: { line: { capBezierPoints: true } } },
+    });
+  }
+
+  // Live price wiring
+  XFO_PRICING.subscribe(state => {
+    const asof = document.getElementById("asof");
+    asof.textContent = state.lastUpdated ? state.lastUpdated.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+    document.getElementById("feed").textContent = state.error ? "feeds offline" : `${state.source.equity} · ${state.source.crypto}`;
+    document.getElementById("feed-detail").textContent = state.error || `Equities: ${state.source.equity} · Crypto: ${state.source.crypto}`;
+
+    // Refresh prices & mv with live data.
+    let liveTotal = 0;
+    for (const h of D.HOLDINGS) {
+      const p = state.prices[h.symbol] || h.seedPrice;
+      const mv = h.qty * p;
+      liveTotal += mv;
+      const priceCell = document.querySelector(`[data-price="${h.symbol}"]`);
+      const mvCell = document.querySelector(`[data-mv="${h.symbol}"]`);
+      if (priceCell) priceCell.textContent = fmt.money(p, 2);
+      if (mvCell) mvCell.textContent = fmt.money(mv);
+    }
+    document.getElementById("kpi-total").textContent = fmt.money(liveTotal);
+    document.getElementById("hero-total").textContent = fmt.money(liveTotal);
+  });
+})();
+</script>
+</body>
+</html>

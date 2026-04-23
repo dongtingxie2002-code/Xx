@@ -317,7 +317,7 @@ input{font:inherit; color:inherit}
 
 /* KPI row --------------------------------------------------------- */
 .kpi-row{
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
 }
 .kpi header{
   display: flex; justify-content: space-between; align-items: center;
@@ -1364,6 +1364,145 @@ body[data-theme="day"][data-design="broadsheet"]{
   --up: #226b37;
   --down: #8a1c1c;
   --accent: #5c4a1f;
+}
+
+/* ───── Design 5 · Pictet · warm-white broadsheet, navy ink, champagne gold ─── */
+body[data-theme="day"][data-design="pictet"]{
+  --bg-0: #FBF8F3;     /* warm page */
+  --bg-1: #F3EDE1;     /* paper */
+  --bg-2: #FFFDF8;     /* card */
+  --bg-3: #F3EDE1;     /* raised */
+  --line: #E4DCC9;
+  --line-soft: #ECE3D0;
+  --ink-0: #0B1F3B;    /* deep navy */
+  --ink-1: #1C2E4A;
+  --ink-2: #6B6558;
+  --ink-3: #9A927F;
+  --gold: #B08D57;     /* champagne */
+  --gold-soft: #D9B87A;
+  --gold-deep: #8A6B3F;
+  --up: #3F6B4B;       /* muted jade */
+  --down: #8C3A2E;     /* oxblood */
+  --accent: #4A5E7A;
+
+  --font-serif: "Cormorant Garamond", "Fraunces", Georgia, serif;
+  --shadow: 0 1px 0 rgba(255,253,248,.9) inset, 0 10px 24px -22px rgba(11,31,59,.18);
+}
+body[data-theme="day"][data-design="pictet"]{
+  background:
+    radial-gradient(1200px 700px at 85% -10%, rgba(176,141,87,.06), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgba(74,94,122,.05), transparent 60%),
+    var(--bg-0);
+}
+body[data-theme="day"][data-design="pictet"] .sidebar{
+  background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-0) 100%);
+  border-right: 1px solid var(--line);
+}
+body[data-theme="day"][data-design="pictet"] .topbar{
+  background: linear-gradient(180deg, rgba(251,248,243,.97), rgba(251,248,243,.85));
+  border-bottom: 1px solid var(--line);
+}
+body[data-theme="day"][data-design="pictet"] .card{
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+body[data-theme="day"][data-design="pictet"] .eyebrow{
+  letter-spacing: .2em;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink-2);
+  text-transform: uppercase;
+}
+body[data-theme="day"][data-design="pictet"] .brand__name{
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 20px;
+  letter-spacing: .02em;
+}
+body[data-theme="day"][data-design="pictet"] .brand__tag{
+  letter-spacing: .28em;
+  font-size: 10px;
+  font-weight: 500;
+}
+body[data-theme="day"][data-design="pictet"] .display{
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -.005em;
+}
+body[data-theme="day"][data-design="pictet"] .display em{
+  font-style: italic;
+  color: var(--gold);
+  font-weight: 500;
+}
+body[data-theme="day"][data-design="pictet"] .kpi__value{
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 34px;
+  letter-spacing: -.01em;
+  color: var(--ink-0);
+}
+body[data-theme="day"][data-design="pictet"] .card__title{
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -.005em;
+  color: var(--ink-0);
+}
+body[data-theme="day"][data-design="pictet"] .modal__title{
+  font-family: var(--font-serif);
+  font-weight: 500;
+  color: var(--ink-0);
+}
+body[data-theme="day"][data-design="pictet"] .risk-kpi strong{
+  font-family: var(--font-serif);
+  font-weight: 500;
+  color: var(--ink-0);
+}
+body[data-theme="day"][data-design="pictet"] .user__avatar{
+  font-family: var(--font-serif);
+  background: var(--bg-3); color: var(--gold-deep);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+body[data-theme="day"][data-design="pictet"] .kbd,
+body[data-theme="day"][data-design="pictet"] .search kbd,
+body[data-theme="day"][data-design="pictet"] .palette__input kbd,
+body[data-theme="day"][data-design="pictet"] .num{
+  font-family: "IBM Plex Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+  font-feature-settings: "tnum";
+}
+body[data-theme="day"][data-design="pictet"] .nav__item.is-active{
+  background: linear-gradient(90deg, rgba(176,141,87,.14), rgba(176,141,87,0));
+}
+body[data-theme="day"][data-design="pictet"] .nav__item.is-active::before{
+  background: var(--gold);
+}
+body[data-theme="day"][data-design="pictet"] .segmented{
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 0;
+}
+body[data-theme="day"][data-design="pictet"] .segmented button{
+  border-radius: 0;
+}
+body[data-theme="day"][data-design="pictet"] .segmented button.is-active{
+  background: var(--bg-3);
+  color: var(--ink-0);
+}
+body[data-theme="day"][data-design="pictet"] .btn--gold{
+  background: var(--ink-0);
+  color: var(--bg-2);
+  border: 1px solid var(--ink-0);
+  box-shadow: none;
+  border-radius: 4px;
+}
+body[data-theme="day"][data-design="pictet"] .btn--gold:hover{
+  background: var(--ink-1);
+}
+body[data-theme="day"][data-design="pictet"] .chip{
+  border-radius: 0;
+  border: 1px solid var(--line);
+  font-weight: 500;
 }
 
 /* Shared day-theme surface polish (applies to all four designs) --- */

@@ -6,7 +6,7 @@
   <title>Xie Family Office — Private Wealth Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body data-theme="night">
@@ -214,6 +214,18 @@
           <footer>
             <span class="muted">Benchmark 60/40 · +7.12%</span>
             <svg class="spark" data-spark="ytd" viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"></svg>
+          </footer>
+        </article>
+
+        <article class="card kpi">
+          <header>
+            <span class="eyebrow">Portfolio Beta</span>
+            <span class="chip chip--muted">vs MSCI ACWI</span>
+          </header>
+          <div class="kpi__value" id="kpi-beta">—</div>
+          <footer>
+            <span class="muted">Weighted by market value · tracked book only</span>
+            <svg class="spark" data-spark="beta" viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"></svg>
           </footer>
         </article>
 
@@ -626,6 +638,20 @@
           </header>
           <div class="modal__body">
             <div class="design-grid" id="design-grid">
+
+              <button type="button" class="design-card" data-design="pictet">
+                <div class="design-card__preview" style="background:#FBF8F3;color:#0B1F3B;border:1px solid #E4DCC9">
+                  <div class="swatches">
+                    <span class="sw" style="background:#FBF8F3"></span>
+                    <span class="sw" style="background:#B08D57"></span>
+                    <span class="sw" style="background:#0B1F3B"></span>
+                  </div>
+                  <div class="head" style="font-family:'Cormorant Garamond',serif;font-weight:500">Private Wealth</div>
+                  <div class="line" style="background:#B08D57"></div>
+                </div>
+                <h4>Pictet</h4>
+                <div class="design-card__desc">Warm-white broadsheet with navy ink and champagne-gold accents. Cormorant serif. Default.</div>
+              </button>
 
               <button type="button" class="design-card" data-design="editorial">
                 <div class="design-card__preview" style="background:#ffffff;color:#1f1e1c;border:1px solid #e5e1d8">

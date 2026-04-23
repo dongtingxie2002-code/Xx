@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Xie Family Office — Dashboard (Modern)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./_vendor/tailwind.css" />
+<script src="./_vendor/echarts.min.js"></script>
+<style>
+  :root {
+    --warm:   #FBF8F3;
+    --ink:    #111111;
+    --ink2:   #2A2A2A;
+    --rule:   #ECE4D3;
+    --muted:  #7A7466;
+    --accent: #0B1F3B;
+    --pos:    #2E7D5B;
+    --neg:    #B44233;
+  }
+  html, body { background: var(--warm); color: var(--ink); font-family: "Inter", sans-serif; }
+  .serif    { font-family: "Cormorant Garamond", serif; }
+  .mono     { font-family: "IBM Plex Mono", monospace; font-feature-settings: "tnum"; }
+  .tnum     { font-variant-numeric: tabular-nums; }
+  .rule     { border-color: var(--rule); }
+  .smallcaps{ text-transform: uppercase; letter-spacing: .22em; font-size: 10.5px; color: var(--muted); }
+  .seg      { display: inline-flex; border: 1px solid var(--rule); background: #FFFDF8; }
+  .seg button { padding: 6px 14px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .seg button.active { background: var(--ink); color: #FBF8F3; }
+  .panel    { border: 1px solid var(--rule); background: #FFFDF8; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<header class="px-10 pt-10 pb-6 flex items-end justify-between border-b rule">
+  <div>
+    <div class="serif text-[34px] leading-none">Xie Family Office</div>
+    <div class="smallcaps mt-2">Dashboard · v3</div>
+  </div>
+  <div class="flex items-center gap-6 text-right">
+    <div>
+      <div class="smallcaps">Total</div>
+      <div class="serif tnum text-[30px] leading-none mt-1" id="head-total">—</div>
+    </div>
+    <div>
+      <div class="smallcaps">YTD</div>
+      <div class="serif tnum text-[30px] leading-none mt-1" id="head-ytd">—</div>
+    </div>
+    <div>
+      <div class="smallcaps">Updated</div>
+      <div class="mono text-xs mt-1" id="asof">—</div>
+      <div class="mono text-[10px] text-[color:var(--muted)]" id="feed">connecting…</div>
+    </div>
+  </div>
+</header>
+
+<main class="px-10 py-8 grid grid-cols-12 gap-6">
+
+  <!-- Hero switchable chart -->
+  <section class="col-span-12 panel p-6">
+    <div class="flex items-end justify-between">
+      <div>
+        <div class="smallcaps">Hero</div>
+        <div class="serif text-[30px] leading-none mt-1" id="hero-subtitle">Portfolio Value · 12M</div>
+      </div>
+      <div class="seg" role="tablist" id="hero-seg">
+        <button data-mode="value" class="active">Value</button>
+        <button data-mode="return">Return</button>
+        <button data-mode="drawdown">Drawdown</button>
+      </div>
+    </div>
+    <div id="hero" style="height: 420px;" class="mt-4"></div>
+  </section>
+
+  <!-- Heatmap + Concentration -->
+  <section class="col-span-12 lg:col-span-7 panel p-6">
+    <div class="flex items-baseline justify-between">
+      <div class="smallcaps">Correlation Matrix · Daily Returns, 12M</div>
+      <div class="mono text-[10px] text-[color:var(--muted)]">−1 … +1</div>
+    </div>
+    <div id="heatmap" style="height: 420px;" class="mt-2"></div>
+  </section>
+
+  <section class="col-span-12 lg:col-span-5 panel p-6">
+    <div class="flex items-baseline justify-between">
+      <div class="smallcaps">Concentration · Top 10 Positions</div>
+      <div class="mono text-[10px] text-[color:var(--muted)]" id="feed-detail">—</div>
+    </div>
+    <div id="concbar" style="height: 420px;" class="mt-2"></div>
+  </section>
+
+  <footer class="col-span-12 rule border-t pt-4 flex justify-between text-[11px] text-[color:var(--muted)] mono">
+    <span>Xie Family Office · Confidential</span>
+    <span>Equities via Yahoo Finance · Crypto via CoinGecko · Refresh 60 s</span>
+  </footer>
+</main>
+
+<script src="./_shared/data.js"></script>
+<script src="./_shared/pricing.js"></script>
+<script>
+(function () {
+  const D = window.XFO_DATA, fmt = D.fmt;
+
+  // Header totals.
+  document.getElementById("head-total").textContent = fmt.moneyShort(D.totalValue);
+  const ytdEl = document.getElementById("head-ytd");
+  ytdEl.textContent = fmt.signedPct(D.metrics.ytdReturn, 2);
+  ytdEl.style.color = D.metrics.ytdReturn >= 0 ? "var(--pos)" : "var(--neg)";
+
+  // Hero — switchable.
+  const hero = echarts.init(document.getElementById("hero"));
+  const dates = D.dates.map(d => d.toISOString().slice(0, 10));
+  const nav = D.navSeries;
+  const base = nav[0];
+  const retSeries = nav.map(v => (v / base - 1) * 100);
+  let peak = -Infinity;
+  const ddSeries = nav.map(v => { if (v > peak) peak = v; return (v / peak - 1) * 100; });
+
+  function renderHero(mode) {
+    let series, fmtter, subtitle, color, fill;
+    if (mode === "value") {
+      series = nav;
+      subtitle = "Portfolio Value · 12M";
+      color = "#0B1F3B";
+      fill = "rgba(11,31,59,0.10)";
+      fmtter = v => fmt.moneyShort(v);
+    } else if (mode === "return") {
+      series = retSeries;
+      subtitle = "Cumulative Return · 12M";
+      color = "#2E7D5B";
+      fill = "rgba(46,125,91,0.12)";
+      fmtter = v => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(1) + "%";
+    } else {
+      series = ddSeries;
+      subtitle = "Drawdown from Peak · 12M";
+      color = "#B44233";
+      fill = "rgba(180,66,51,0.14)";
+      fmtter = v => v.toFixed(1) + "%";
+    }
+    document.getElementById("hero-subtitle").textContent = subtitle;
+
+    hero.setOption({
+      animationDuration: 500,
+      grid: { left: 64, right: 24, top: 16, bottom: 36 },
+      xAxis: {
+        type: "category", boundaryGap: false, data: dates,
+        axisLine: { lineStyle: { color: "#C9BFA8" } },
+        axisLabel: { color: "#7A7466", fontFamily: "IBM Plex Mono", fontSize: 10 },
+      },
+      yAxis: {
+        type: "value", scale: true,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: "#7A7466", fontFamily: "IBM Plex Mono", fontSize: 10, formatter: fmtter },
+        splitLine: { lineStyle: { color: "#ECE4D3" } },
+      },
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: "#FFFDF8",
+        borderColor: "#ECE4D3",
+        textStyle: { color: "#111", fontFamily: "IBM Plex Mono", fontSize: 11 },
+        formatter: p => `<div style="font-family:Inter;letter-spacing:.22em;text-transform:uppercase;font-size:10px;color:#7A7466">${p[0].axisValue}</div><div style="font-family:Cormorant Garamond;font-size:22px;margin-top:4px">${fmtter(p[0].data)}</div>`,
+      },
+      series: [{
+        type: "line", smooth: true, symbol: "none",
+        data: series,
+        lineStyle: { color, width: 2 },
+        areaStyle: { color: fill },
+      }],
+    }, true);
+  }
+  renderHero("value");
+  document.getElementById("hero-seg").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    for (const b of btn.parentElement.querySelectorAll("button")) b.classList.remove("active");
+    btn.classList.add("active");
+    renderHero(btn.dataset.mode);
+  });
+
+  // Heatmap.
+  const heatmap = echarts.init(document.getElementById("heatmap"));
+  const syms = D.correlation.symbols;
+  const mat = D.correlation.matrix;
+  const data = [];
+  for (let i = 0; i < syms.length; i++) for (let j = 0; j < syms.length; j++) data.push([j, i, +mat[i][j].toFixed(2)]);
+  heatmap.setOption({
+    tooltip: { position: "top", formatter: p => `${syms[p.data[1]]} · ${syms[p.data[0]]}<br/>ρ = ${p.data[2].toFixed(2)}`, backgroundColor: "#FFFDF8", borderColor: "#ECE4D3", textStyle: { color: "#111", fontFamily: "IBM Plex Mono" } },
+    grid: { left: 56, right: 24, top: 24, bottom: 56 },
+    xAxis: { type: "category", data: syms, axisLabel: { color: "#2A2A2A", fontFamily: "IBM Plex Mono", fontSize: 11 }, axisLine: { show: false }, axisTick: { show: false }, splitArea: { show: true } },
+    yAxis: { type: "category", data: syms, axisLabel: { color: "#2A2A2A", fontFamily: "IBM Plex Mono", fontSize: 11 }, axisLine: { show: false }, axisTick: { show: false }, splitArea: { show: true } },
+    visualMap: {
+      min: -1, max: 1, calculable: true, orient: "horizontal",
+      left: "center", bottom: 0, itemWidth: 10, itemHeight: 120,
+      textStyle: { color: "#7A7466", fontFamily: "IBM Plex Mono", fontSize: 10 },
+      inRange: { color: ["#B44233", "#F0E6CE", "#0B1F3B"] },
+    },
+    series: [{
+      type: "heatmap",
+      data,
+      label: { show: true, color: "#FBF8F3", fontFamily: "IBM Plex Mono", fontSize: 10, formatter: p => (p.data[2] >= 0 ? "+" : "") + p.data[2].toFixed(2) },
+      itemStyle: { borderColor: "#FBF8F3", borderWidth: 1 },
+      emphasis: { itemStyle: { shadowBlur: 8, shadowColor: "rgba(0,0,0,.2)" } },
+    }],
+  });
+
+  // Concentration bar (top 10 — we have 9 positions, render all).
+  const concbar = echarts.init(document.getElementById("concbar"));
+  let positions = D.HOLDINGS.map(h => ({
+    label: h.symbol,
+    mv: h.qty * h.seedPrice,
+  }));
+  positions.sort((a, b) => b.mv - a.mv);
+  positions = positions.slice(0, 10);
+  const total = D.totalValue;
+
+  function renderConcBar(posList, totalValue) {
+    concbar.setOption({
+      grid: { left: 80, right: 56, top: 16, bottom: 24 },
+      xAxis: {
+        type: "value",
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: "#7A7466", fontFamily: "IBM Plex Mono", fontSize: 10, formatter: v => (v * 100).toFixed(0) + "%" },
+        splitLine: { lineStyle: { color: "#ECE4D3" } },
+      },
+      yAxis: {
+        type: "category",
+        inverse: true,
+        data: posList.map(p => p.label),
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: "#111", fontFamily: "IBM Plex Mono", fontSize: 12 },
+      },
+      tooltip: { trigger: "item", formatter: p => `${p.name}<br/>${fmt.money(posList[p.dataIndex].mv)} · ${(p.data * 100).toFixed(1)}%`, backgroundColor: "#FFFDF8", borderColor: "#ECE4D3", textStyle: { color: "#111", fontFamily: "IBM Plex Mono" } },
+      series: [{
+        type: "bar",
+        data: posList.map(p => p.mv / totalValue),
+        itemStyle: { color: "#0B1F3B" },
+        barWidth: 14,
+        label: { show: true, position: "right", color: "#2A2A2A", fontFamily: "IBM Plex Mono", fontSize: 10, formatter: p => (p.data * 100).toFixed(1) + "%" },
+      }],
+    }, true);
+  }
+  renderConcBar(positions, total);
+
+  // Live wiring.
+  XFO_PRICING.subscribe(state => {
+    document.getElementById("asof").textContent = state.lastUpdated ? state.lastUpdated.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "—";
+    document.getElementById("feed").textContent = state.error ? "feeds offline" : `${state.source.equity} · ${state.source.crypto}`;
+    document.getElementById("feed-detail").textContent = state.error || `Live: ${state.source.equity} · ${state.source.crypto}`;
+
+    let liveTotal = 0;
+    const livePositions = D.HOLDINGS.map(h => {
+      const p = state.prices[h.symbol] || h.seedPrice;
+      const mv = h.qty * p;
+      liveTotal += mv;
+      return { label: h.symbol, mv };
+    }).sort((a, b) => b.mv - a.mv).slice(0, 10);
+
+    document.getElementById("head-total").textContent = fmt.moneyShort(liveTotal);
+    renderConcBar(livePositions, liveTotal);
+  });
+
+  window.addEventListener("resize", () => { hero.resize(); heatmap.resize(); concbar.resize(); });
+})();
+</script>
+</body>
+</html>

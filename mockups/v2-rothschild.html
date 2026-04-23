@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Xie Family Office — Quarterly Letter (Rothschild-style)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./_vendor/tailwind.css" />
+<script src="./_vendor/echarts.min.js"></script>
+<style>
+  :root {
+    --warm:  #FBF7EF;
+    --paper: #F4ECDD;
+    --ink:   #121212;
+    --ink2:  #2B2B2B;
+    --accent:#7A1F1F;
+    --accent2:#A9392E;
+    --rule:  #D8CFBC;
+    --muted: #6F6A5C;
+    --gold:  #8C6A3C;
+  }
+  html, body { background: var(--warm); color: var(--ink); font-family: "Inter", sans-serif; }
+  .serif    { font-family: "Cormorant Garamond", serif; }
+  .mono     { font-family: "IBM Plex Mono", monospace; font-feature-settings: "tnum"; }
+  .tnum     { font-variant-numeric: tabular-nums; }
+  .hairline { border-color: var(--rule); }
+  .rule     { border-top: 1px solid var(--rule); }
+  .thickrule{ border-top: 3px double var(--ink); }
+  .smallcaps{ text-transform: uppercase; letter-spacing: .28em; font-size: 10.5px; color: var(--muted); }
+  .stat     { border: 1px solid var(--rule); background: #FFFDF7; }
+  .ledger th, .ledger td { padding: 10px 10px; border-bottom: 1px solid var(--rule); }
+  .ledger th { font-weight: 500; text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .22em; color: var(--muted); }
+</style>
+</head>
+<body class="min-h-screen">
+
+<header class="px-12 pt-10 pb-6">
+  <div class="flex items-start justify-between">
+    <div>
+      <div class="serif text-[34px] leading-none">Xie Family Office</div>
+      <div class="smallcaps mt-2">Quarterly Letter · Private Clients</div>
+    </div>
+    <div class="text-right">
+      <div class="smallcaps">Volume XII · No. 2</div>
+      <div class="mono text-[11px] text-[color:var(--muted)] mt-2" id="asof">—</div>
+    </div>
+  </div>
+  <div class="thickrule mt-6"></div>
+</header>
+
+<main class="px-12 pb-10">
+
+  <!-- Hero editorial number -->
+  <section class="grid grid-cols-12 gap-8 pt-6">
+    <div class="col-span-12 md:col-span-5">
+      <div class="smallcaps">Portfolio Value</div>
+      <div class="serif font-medium tnum leading-[0.9]" style="font-size: 96px;" id="hero-total">$12.40M</div>
+      <div class="flex items-baseline gap-4 mt-4">
+        <div class="serif tnum text-[28px]" id="hero-delta">+0.00%</div>
+        <div class="smallcaps">Trailing Twelve Months</div>
+      </div>
+      <p class="serif italic text-[19px] leading-relaxed text-[color:var(--ink2)] mt-6 max-w-md">
+        "Prudence, patience, and partnership — three words that have guided this family since the first ledger was opened."
+      </p>
+      <div class="mono text-[11px] text-[color:var(--muted)] mt-3">— Letter to Principals, April 2026</div>
+    </div>
+
+    <div class="col-span-12 md:col-span-7">
+      <div class="flex items-baseline justify-between">
+        <div class="smallcaps">Asset-Class Value · 12 Months</div>
+        <div class="mono text-[11px] text-[color:var(--muted)]" id="feed">—</div>
+      </div>
+      <div id="stacked" style="height: 380px;" class="mt-2"></div>
+    </div>
+  </section>
+
+  <!-- Risk panel -->
+  <section class="grid grid-cols-12 gap-8 mt-10">
+    <div class="col-span-12">
+      <div class="smallcaps mb-3">Risk · Trailing Twelve Months</div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="stat p-6">
+          <div class="smallcaps">Realised Volatility</div>
+          <div class="serif tnum text-[44px] leading-none mt-3" id="r-vol">—</div>
+          <div class="mono text-[11px] text-[color:var(--muted)] mt-2">Annualised, daily returns</div>
+        </div>
+        <div class="stat p-6">
+          <div class="smallcaps">Maximum Drawdown</div>
+          <div class="serif tnum text-[44px] leading-none mt-3" id="r-dd">—</div>
+          <div class="mono text-[11px] text-[color:var(--muted)] mt-2">Peak-to-trough, 12M</div>
+        </div>
+        <div class="stat p-6">
+          <div class="smallcaps">Portfolio Beta</div>
+          <div class="serif tnum text-[44px] leading-none mt-3" id="r-beta">—</div>
+          <div class="mono text-[11px] text-[color:var(--muted)] mt-2">Versus VT (global)</div>
+        </div>
+        <div class="stat p-6">
+          <div class="smallcaps">Value-at-Risk · 95%</div>
+          <div class="serif tnum text-[44px] leading-none mt-3" id="r-var">—</div>
+          <div class="mono text-[11px] text-[color:var(--muted)] mt-2">Parametric, 1-day</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Holdings ruled table -->
+  <section class="mt-12">
+    <div class="flex items-baseline justify-between">
+      <div class="smallcaps">Ledger of Positions</div>
+      <div class="mono text-[11px] text-[color:var(--muted)]" id="feed-detail">—</div>
+    </div>
+    <div class="thickrule mt-2"></div>
+    <table class="ledger w-full text-sm mt-0">
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th>Name</th>
+          <th>Class</th>
+          <th class="text-right">Quantity</th>
+          <th class="text-right">Price</th>
+          <th class="text-right">Market Value</th>
+          <th class="text-right">Weight</th>
+          <th class="text-right">12M</th>
+        </tr>
+      </thead>
+      <tbody id="holdings-body"></tbody>
+    </table>
+  </section>
+
+  <footer class="rule mt-10 pt-4 flex justify-between text-[11px] text-[color:var(--muted)] mono">
+    <span>Xie Family Office · Private & Confidential</span>
+    <span>Equities via Yahoo Finance · Digital assets via CoinGecko · Refreshed every 60 s</span>
+  </footer>
+</main>
+
+<script src="./_shared/data.js"></script>
+<script src="./_shared/pricing.js"></script>
+<script>
+(function () {
+  const D = window.XFO_DATA, fmt = D.fmt;
+
+  // Stacked area chart: asset class value over time.
+  const stacked = echarts.init(document.getElementById("stacked"));
+  const classes = Object.keys(D.classSeries);
+  const palette = ["#7A1F1F", "#8C6A3C", "#3F5D7A", "#2E4A3A", "#6B6558"];
+  stacked.setOption({
+    animationDuration: 700,
+    tooltip: {
+      trigger: "axis",
+      backgroundColor: "#FFFDF7",
+      borderColor: "#D8CFBC",
+      textStyle: { color: "#121212", fontFamily: "IBM Plex Mono", fontSize: 11 },
+      formatter: (params) => {
+        const date = params[0].axisValue;
+        const rows = params.map(p => `<div style="display:flex;justify-content:space-between;gap:18px"><span>${p.marker}${p.seriesName}</span><span>${fmt.moneyShort(p.data)}</span></div>`).join("");
+        return `<div style="font-family:Inter;letter-spacing:.22em;text-transform:uppercase;font-size:10px;color:#6F6A5C">${date}</div>${rows}`;
+      },
+    },
+    legend: {
+      top: 0, right: 0,
+      icon: "rect", itemWidth: 10, itemHeight: 10,
+      textStyle: { color: "#2B2B2B", fontFamily: "Inter", fontSize: 11 },
+      data: classes,
+    },
+    grid: { left: 64, right: 16, top: 40, bottom: 36 },
+    xAxis: {
+      type: "category",
+      boundaryGap: false,
+      data: D.dates.map(d => d.toISOString().slice(0, 10)),
+      axisLine: { lineStyle: { color: "#B8AE94" } },
+      axisLabel: { color: "#6F6A5C", fontFamily: "IBM Plex Mono", fontSize: 10 },
+    },
+    yAxis: {
+      type: "value",
+      axisLine: { show: false }, axisTick: { show: false },
+      axisLabel: { color: "#6F6A5C", fontFamily: "IBM Plex Mono", fontSize: 10, formatter: v => fmt.moneyShort(v) },
+      splitLine: { lineStyle: { color: "#E7DFCA" } },
+    },
+    series: classes.map((c, i) => ({
+      name: c,
+      type: "line",
+      stack: "total",
+      smooth: true,
+      symbol: "none",
+      lineStyle: { width: 0 },
+      areaStyle: { color: palette[i % palette.length], opacity: 0.78 },
+      emphasis: { focus: "series" },
+      data: D.classSeries[c],
+    })),
+  });
+
+  // Hero total.
+  document.getElementById("hero-total").textContent = fmt.moneyShort(D.totalValue).replace("$", "$");
+  const chg = D.navSeries[D.navSeries.length - 1] / D.navSeries[0] - 1;
+  const heroDelta = document.getElementById("hero-delta");
+  heroDelta.textContent = fmt.signedPct(chg);
+  heroDelta.style.color = chg >= 0 ? "#2E4A3A" : "#7A1F1F";
+
+  // Risk cards.
+  document.getElementById("r-vol").textContent = fmt.pct(D.metrics.annVol, 1);
+  document.getElementById("r-dd").textContent = fmt.signedPct(D.metrics.maxDD, 1);
+  document.getElementById("r-beta").textContent = D.metrics.beta.toFixed(2);
+  document.getElementById("r-var").textContent = fmt.moneyShort(D.metrics.var95);
+
+  // Holdings ruled table.
+  const body = document.getElementById("holdings-body");
+  body.innerHTML = "";
+  for (const h of D.HOLDINGS) {
+    const series = D.priceSeries[h.symbol];
+    const chg12 = series[series.length - 1] / series[0] - 1;
+    const mv = h.qty * h.seedPrice;
+    const weight = mv / D.totalValue;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono font-medium">${h.symbol}</td>
+      <td class="serif italic text-[17px]">${h.name}</td>
+      <td class="text-[color:var(--muted)]">${h.class}</td>
+      <td class="text-right mono tnum">${h.symbol === "CASH" ? fmt.money(h.qty) : h.qty.toLocaleString()}</td>
+      <td class="text-right mono tnum" data-price="${h.symbol}">${fmt.money(h.seedPrice, 2)}</td>
+      <td class="text-right mono tnum" data-mv="${h.symbol}">${fmt.money(mv)}</td>
+      <td class="text-right mono tnum">${(weight * 100).toFixed(1)}%</td>
+      <td class="text-right mono tnum" style="color:${chg12 >= 0 ? "#2E4A3A" : "#7A1F1F"}">${h.symbol === "CASH" ? "—" : fmt.signedPct(chg12, 1)}</td>`;
+    body.appendChild(tr);
+  }
+
+  // Live.
+  XFO_PRICING.subscribe(state => {
+    document.getElementById("asof").textContent = state.lastUpdated ? "As of " + state.lastUpdated.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }) : "—";
+    document.getElementById("feed").textContent = state.error ? "feeds offline — seed prices" : `Live · ${state.source.equity} · ${state.source.crypto}`;
+    document.getElementById("feed-detail").textContent = state.error || `Equities: ${state.source.equity} · Crypto: ${state.source.crypto}`;
+
+    let liveTotal = 0;
+    for (const h of D.HOLDINGS) {
+      const p = state.prices[h.symbol] || h.seedPrice;
+      const mv = h.qty * p;
+      liveTotal += mv;
+      const pEl = document.querySelector(`[data-price="${h.symbol}"]`);
+      const mEl = document.querySelector(`[data-mv="${h.symbol}"]`);
+      if (pEl) pEl.textContent = fmt.money(p, 2);
+      if (mEl) mEl.textContent = fmt.money(mv);
+    }
+    document.getElementById("hero-total").textContent = fmt.moneyShort(liveTotal);
+  });
+})();
+</script>
+</body>
+</html>
