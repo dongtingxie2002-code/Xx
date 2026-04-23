@@ -392,6 +392,7 @@
       { sel: '[data-spark="aum"]',  color: 'var(--gold)',   bias: 0.9 },
       { sel: '[data-spark="pnl"]',  color: 'var(--up)',     bias: 0.7 },
       { sel: '[data-spark="ytd"]',  color: 'var(--gold)',   bias: 0.9 },
+      { sel: '[data-spark="beta"]', color: 'var(--accent)', bias: 0.5 },
     ];
     specs.forEach(({ sel, color, bias }) => {
       const svg = $(sel); if (!svg) return;
@@ -1034,12 +1035,11 @@
     });
   });
 
-  // ── Boot ─────────────────────────────────────────────────────────
+  // ── Boot (first pass — derived-book renderer runs after its declaration below) ─
   renderHoldings();
   renderWatch();
   renderKpiSparks();
   renderPerf();
-  renderDerivedBook();
 
   // ── Derive book-wide analytics from live positions ───────────────
   const bucketOfHolding = (h) => {
@@ -1252,6 +1252,14 @@
     $('#risk-te').textContent = (annVol * 0.38 * 100).toFixed(1) + '%'; // TE ~ active vol
     const sharpe = annVol > 0 ? ((0.1174 - 0.04) / annVol).toFixed(2) : '—';
     $('#risk-ir').textContent = sharpe;
+
+    // Weighted portfolio beta across the tracked book
+    const bookMV = holdings.reduce((s, h) => s + h.qty * h.px, 0);
+    const bookBeta = bookMV > 0
+      ? holdings.reduce((s, h) => s + h.qty * h.px * (h.beta || 0), 0) / bookMV
+      : 0;
+    const betaEl = $('#kpi-beta');
+    if (betaEl) betaEl.textContent = bookBeta.toFixed(2);
 
     // Stress scenarios computed from per-position sensitivities
     const spxShock    = holdings.reduce((s, h) => s + h.qty * h.px * (-0.10 * h.beta), 0);
@@ -2479,10 +2487,10 @@
 
   // ── Design picker ───────────────────────────────────────────────
   const DESIGN_KEY = 'av-design-v1';
-  const DESIGNS = ['editorial', 'sand', 'clinical', 'broadsheet'];
-  const savedDesign = localStorage.getItem(DESIGN_KEY) || 'editorial';
+  const DESIGNS = ['pictet', 'editorial', 'sand', 'clinical', 'broadsheet'];
+  const savedDesign = localStorage.getItem(DESIGN_KEY) || 'pictet';
   const applyDesign = (d) => {
-    if (!DESIGNS.includes(d)) d = 'editorial';
+    if (!DESIGNS.includes(d)) d = 'pictet';
     document.body.dataset.design = d;
     localStorage.setItem(DESIGN_KEY, d);
     $$('.design-card').forEach((c) => c.classList.toggle('is-selected', c.dataset.design === d));
@@ -2490,7 +2498,7 @@
     if (typeof renderKpiSparks === 'function') { renderKpiSparks(); renderPerf(); renderDonut(); }
   };
   document.body.dataset.design = savedDesign;
-  // Default new users to the day theme + editorial design
+  // Default new users to the day theme + Pictet design
   if (!localStorage.getItem('av-theme')) {
     document.body.dataset.theme = 'day';
     localStorage.setItem('av-theme', 'day');
@@ -2499,7 +2507,7 @@
   const designModal = $('#design-modal');
   $('#design-btn')?.addEventListener('click', () => {
     designModal.hidden = false;
-    $$('.design-card').forEach((c) => c.classList.toggle('is-selected', c.dataset.design === (document.body.dataset.design || 'editorial')));
+    $$('.design-card').forEach((c) => c.classList.toggle('is-selected', c.dataset.design === (document.body.dataset.design || 'pictet')));
   });
   designModal?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => designModal.hidden = true));
   $('#design-grid')?.addEventListener('click', (e) => {
@@ -3176,4 +3184,10 @@
   window.addEventListener('resize', () => {
     clearTimeout(r); r = setTimeout(renderPerf, 120);
   });
+
+  // Final boot pass — everything else (positions book, cash book, PM book, FX rates,
+  // design, preferences) is now initialised, so derived charts and analytics can
+  // render safely and the Beta KPI gets its first value.
+  renderDerivedBook();
+  recomputeAnalytics();
 })();
