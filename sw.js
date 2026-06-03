@@ -3,12 +3,14 @@
  * after its first visit. All data lives in localStorage so it persists
  * across offline sessions too.
  */
-const CACHE = 'av-shell-v1';
+const CACHE = 'av-shell-v2';
 const SHELL = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './loan-switch.html',
+  './loan-switch.js',
 ];
 
 self.addEventListener('install', (event) => {

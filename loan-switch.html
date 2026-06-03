@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Currency Loan Switch — Xie Family Office</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* ── Loan Switch tool — page-specific layout, tokens reused ── */
+    body{display:block}
+    .ls-wrap{max-width:1320px;margin:0 auto;padding:26px 28px 80px}
+    .ls-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px}
+    .ls-back{display:inline-flex;align-items:center;gap:8px;color:var(--ink-2);font-size:12.5px;font-weight:600;letter-spacing:.02em}
+    .ls-back:hover{color:var(--gold-soft)}
+    .ls-back svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8}
+    .ls-actions{display:flex;gap:10px}
+    .ls-btn{border:1px solid var(--line);background:var(--bg-2);border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--ink-1);transition:.15s}
+    .ls-btn:hover{border-color:var(--gold-deep);color:var(--ink-0)}
+    .ls-btn--ghost{background:transparent}
+
+    .ls-hero{margin:6px 0 22px}
+    .ls-hero .display{margin-top:2px}
+    .ls-hero .lede{margin-top:8px}
+
+    .panel{background:var(--bg-2);border:1px solid var(--line-soft);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px;margin-bottom:18px}
+    .panel__head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px}
+    .panel__title{font-family:var(--font-serif);font-size:19px;font-weight:500;letter-spacing:-.01em}
+    .panel__note{color:var(--ink-2);font-size:12px;max-width:46ch;text-align:right}
+
+    .grid{display:grid;gap:14px}
+    .grid--facility{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-2);font-weight:600}
+    .field .hint{font-size:11px;color:var(--ink-3);font-weight:500;letter-spacing:0;text-transform:none}
+    .inp{background:var(--bg-1);border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-family:var(--font-mono);font-size:14px;color:var(--ink-0);width:100%;transition:.15s}
+    .inp:focus{outline:none;border-color:var(--gold-deep);box-shadow:0 0 0 3px rgba(200,168,107,.12)}
+    .inp--blue{border-color:#3a4a66;background:rgba(139,169,214,.06)}
+    .inp.read{background:transparent;border-color:transparent;color:var(--gold-soft);padding-left:0}
+
+    /* rates table */
+    table.rates{width:100%;border-collapse:collapse;font-size:13px}
+    table.rates th{text-align:right;font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-2);font-weight:600;padding:0 10px 10px;border-bottom:1px solid var(--line)}
+    table.rates th:first-child,table.rates td:first-child{text-align:left}
+    table.rates td{padding:8px 10px;border-bottom:1px solid var(--line-soft);font-family:var(--font-mono);text-align:right;vertical-align:middle}
+    table.rates td:first-child{font-family:var(--font-sans);font-weight:600}
+    table.rates .ccy-flag{display:inline-flex;align-items:center;gap:9px}
+    table.rates .dot{width:8px;height:8px;border-radius:50%;flex:none}
+    .cellinp{width:84px;background:rgba(255,234,150,.06);border:1px solid #5a5230;border-radius:7px;padding:6px 8px;font-family:var(--font-mono);font-size:13px;color:var(--ink-0);text-align:right}
+    .cellinp:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px rgba(200,168,107,.15)}
+    .cellinp.fx{background:rgba(139,169,214,.07);border-color:#3a4a66}
+    .allin{color:var(--gold-soft);font-weight:600}
+    .pickcol{width:42px}
+    .pick{width:18px;height:18px;accent-color:var(--gold);cursor:pointer}
+    td.base{color:var(--ink-3)}
+
+    /* stress slider */
+    .stress{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+    .stress input[type=range]{flex:1;min-width:240px;accent-color:var(--gold)}
+    .stress__val{font-family:var(--font-mono);font-size:22px;color:var(--gold-soft);min-width:84px;text-align:right}
+    .stress__lab{font-size:12px;color:var(--ink-2);max-width:34ch}
+
+    /* recommendation */
+    .reco{display:flex;align-items:center;gap:16px;padding:16px 18px;border-radius:12px;background:linear-gradient(180deg,rgba(76,183,135,.10),rgba(76,183,135,.03));border:1px solid rgba(76,183,135,.30);margin-bottom:18px}
+    .reco.warn{background:linear-gradient(180deg,rgba(216,107,107,.10),rgba(216,107,107,.03));border-color:rgba(216,107,107,.30)}
+    .reco.neutral{background:var(--bg-2);border-color:var(--line)}
+    .reco__icon{font-size:26px;line-height:1}
+    .reco__txt b{color:var(--ink-0)}
+    .reco__txt{font-size:13.5px;color:var(--ink-1)}
+
+    /* scenario cards */
+    .cards{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+    .card{position:relative;background:var(--bg-2);border:1px solid var(--line);border-radius:13px;padding:18px;overflow:hidden}
+    .card.best{border-color:var(--gold);box-shadow:0 0 0 1px rgba(200,168,107,.25),0 18px 40px -24px rgba(0,0,0,.7)}
+    .card.loss{border-color:rgba(216,107,107,.4)}
+    .card__rank{position:absolute;top:14px;right:16px;font-size:11px;color:var(--ink-3);font-family:var(--font-mono)}
+    .card__ccy{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+    .card__ccy .dot{width:10px;height:10px;border-radius:50%}
+    .card__ccy h3{font-family:var(--font-serif);font-size:22px;font-weight:500;margin:0}
+    .card__sub{font-size:12px;color:var(--ink-2);margin-bottom:14px}
+    .card__hero{font-family:var(--font-mono);font-size:26px;font-weight:600;letter-spacing:-.01em;margin:2px 0 2px}
+    .card__herolab{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-2);margin-bottom:14px}
+    .card__rows{display:flex;flex-direction:column;gap:8px;font-size:12.5px}
+    .card__row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+    .card__row span{color:var(--ink-2)}
+    .card__row b{font-family:var(--font-mono);font-weight:600;color:var(--ink-0)}
+    .pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px}
+    .pill.go{background:var(--up-soft);color:var(--up)}
+    .pill.no{background:var(--down-soft);color:var(--down)}
+    .pill.flag{background:rgba(200,168,107,.14);color:var(--gold-soft)}
+    .bar{height:5px;border-radius:3px;background:var(--bg-3);margin-top:14px;overflow:hidden}
+    .bar > i{display:block;height:100%;border-radius:3px}
+
+    /* matrix */
+    table.matrix{width:100%;border-collapse:collapse;font-size:12.5px}
+    table.matrix th,table.matrix td{padding:9px 10px;text-align:right;font-family:var(--font-mono);border-bottom:1px solid var(--line-soft)}
+    table.matrix th{font-family:var(--font-sans);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2);font-weight:600;border-bottom:1px solid var(--line)}
+    table.matrix th:first-child,table.matrix td:first-child{text-align:left;font-family:var(--font-sans);font-weight:600}
+    table.matrix tr:hover td{background:rgba(255,255,255,.015)}
+    .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:var(--ink-2)}
+    .legend i{font-style:normal}
+    .disc{font-size:11px;color:var(--ink-3);line-height:1.6;margin-top:6px}
+    @media(max-width:640px){.ls-wrap{padding:18px 14px 60px}.panel{padding:16px}}
+  </style>
+</head>
+<body data-theme="night">
+  <div class="ls-wrap">
+
+    <div class="ls-top">
+      <a class="ls-back" href="index.html">
+        <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+        Back to dashboard
+      </a>
+      <div class="ls-actions">
+        <button class="ls-btn ls-btn--ghost" id="btn-reset">Reset defaults</button>
+        <button class="ls-btn" id="btn-print">Export / Print</button>
+      </div>
+    </div>
+
+    <header class="ls-hero">
+      <span class="eyebrow">Private Wealth · Lombard Lending</span>
+      <h1 class="display">Currency Loan <em>Switch</em></h1>
+      <p class="lede">Your facility is drawn in USD. Re-denominating the loan into a lower-yielding funding currency
+        harvests interest <strong>carry</strong> — but introduces FX risk on the principal and a collateral haircut for
+        the currency mismatch. Pick the currencies to model and compare every scenario side by side.</p>
+    </header>
+
+    <!-- 1. Facility -->
+    <section class="panel">
+      <div class="panel__head">
+        <div class="panel__title">1 · Loan Facility</div>
+        <div class="panel__note">Base currency is fixed to USD. All figures below are expressed in USD-equivalent.</div>
+      </div>
+      <div class="grid grid--facility">
+        <div class="field">
+          <label>Client</label>
+          <input class="inp inp--blue" id="f-client" type="text" value="Xie Family Office" />
+        </div>
+        <div class="field">
+          <label>Loan Principal (USD)</label>
+          <input class="inp inp--blue" id="f-principal" type="number" step="1000" value="994276.45" />
+        </div>
+        <div class="field">
+          <label>Loan Tenor (years)</label>
+          <input class="inp inp--blue" id="f-tenor" type="number" step="0.25" min="0.25" value="1" />
+        </div>
+        <div class="field">
+          <label>Client Free Equity (USD)</label>
+          <input class="inp inp--blue" id="f-equity" type="number" step="1000" value="25000" />
+          <span class="hint">Loanable value available above current utilisation — absorbs FX-mismatch haircuts.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Rates & FX -->
+    <section class="panel">
+      <div class="panel__head">
+        <div class="panel__title">2 · Funding Rates, FX &amp; Haircuts</div>
+        <div class="panel__note">Yellow cells = assumptions to review. All-in = reference + bank spread. Spot = foreign units per 1 USD.</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="rates" id="rates-tbl">
+          <thead>
+            <tr>
+              <th class="pickcol">Switch</th>
+              <th>Currency</th>
+              <th>Reference&nbsp;%</th>
+              <th>Spread&nbsp;%</th>
+              <th>All-in&nbsp;%</th>
+              <th>Spot (per USD)</th>
+              <th>Mismatch haircut&nbsp;%</th>
+            </tr>
+          </thead>
+          <tbody><!-- rows injected --></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3. FX stress -->
+    <section class="panel">
+      <div class="panel__head">
+        <div class="panel__title">3 · FX Stress at Maturity</div>
+        <div class="panel__note">Move the funding currency vs USD. Positive = funding currency <em>appreciates</em> (bad for the borrower).</div>
+      </div>
+      <div class="stress">
+        <input type="range" id="stress" min="-15" max="15" step="0.5" value="0" />
+        <div class="stress__val" id="stress-val">0.0%</div>
+        <div class="stress__lab">Applied uniformly to every selected currency to value the repayment of principal at maturity.</div>
+      </div>
+    </section>
+
+    <!-- Recommendation -->
+    <div class="reco neutral" id="reco">
+      <div class="reco__icon">⟳</div>
+      <div class="reco__txt" id="reco-txt">Select one or more currencies above to compare switch scenarios.</div>
+    </div>
+
+    <!-- 4. Scenario cards -->
+    <section class="panel">
+      <div class="panel__head">
+        <div class="panel__title">4 · Switch Scenarios</div>
+        <div class="panel__note">Ranked by net benefit over the full tenor at the current FX-stress assumption.</div>
+      </div>
+      <div class="cards" id="cards"></div>
+    </section>
+
+    <!-- 5. Breakeven matrix -->
+    <section class="panel">
+      <div class="panel__head">
+        <div class="panel__title">5 · Carry vs FX Breakeven Matrix</div>
+        <div class="panel__note">Net P&amp;L over tenor (USD) under a range of FX moves. Breakeven = appreciation that wipes out the carry.</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="matrix" id="matrix">
+          <thead><tr id="matrix-head"></tr></thead>
+          <tbody id="matrix-body"></tbody>
+        </table>
+      </div>
+      <div class="legend">
+        <span><i style="color:var(--up)">▮</i> net gain</span>
+        <span><i style="color:var(--down)">▮</i> net loss</span>
+        <span><i style="color:var(--gold-soft)">◆</i> breakeven appreciation</span>
+      </div>
+      <p class="disc">Carry benefit (USD) ≈ Principal × (USD all-in − target all-in) × tenor. FX loss on principal (USD) ≈ Principal × funding-currency
+        appreciation. Net benefit = carry − FX loss. Haircut cost = Principal × mismatch haircut; if it exceeds free equity the switch
+        breaches collateral and additional pledge or a smaller draw is required. Simple interest, single-period FX, illustrative only —
+        confirm live rates, the bank's lending-value schedule and margin terms before execution.</p>
+    </section>
+
+  </div>
+
+  <script src="loan-switch.js"></script>
+</body>
+</html>
