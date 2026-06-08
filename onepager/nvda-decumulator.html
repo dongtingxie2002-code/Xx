@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Xie Family Office — NVDA Decumulator (One-Pager)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#faf7f1; --paper-2:#f3ede1; --card:#ffffff;
+    --ink-0:#1d1b16; --ink-1:#3b372f; --ink-2:#6c6557; --ink-3:#9a9384;
+    --line:#e4dccb; --line-2:#d8cfb9;
+    --gold:#9a7d3f; --gold-soft:#c8a86b; --gold-bg:rgba(200,168,107,.12);
+    --up:#3f7d5f; --up-bg:rgba(63,125,95,.10);
+    --down:#b15a4f; --down-bg:rgba(177,90,79,.10);
+    --blue:#4f6a92;
+    --serif:"Fraunces","Cormorant Garamond",Georgia,serif;
+    --sans:"Inter",-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--sans); color:var(--ink-1); background:var(--paper-2);
+    font-size:13px; line-height:1.5; -webkit-font-smoothing:antialiased;
+    letter-spacing:.005em;
+  }
+  .sheet{
+    width:820px; margin:22px auto; background:var(--paper);
+    background-image:radial-gradient(1200px 480px at 88% -8%, rgba(200,168,107,.10), transparent 60%);
+    border:1px solid var(--line-2); box-shadow:0 24px 60px -28px rgba(40,32,12,.4);
+    padding:34px 40px 26px;
+  }
+  .num{font-family:var(--mono); font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+  h1,h2,h3{font-family:var(--serif); color:var(--ink-0); font-weight:500; margin:0}
+  em{font-style:italic}
+  a{color:var(--gold); text-decoration:none}
+
+  /* Masthead */
+  .mast{display:flex; justify-content:space-between; align-items:flex-start;
+    border-bottom:1.5px solid var(--ink-0); padding-bottom:12px}
+  .brand{display:flex; gap:11px; align-items:center}
+  .mark{width:34px;height:34px;flex:0 0 auto}
+  .brand__name{font-family:var(--serif); font-size:18px; color:var(--ink-0); line-height:1.05}
+  .brand__tag{font-size:9.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); margin-top:3px}
+  .mast__r{text-align:right; font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-2)}
+  .mast__r b{display:block; color:var(--ink-0); font-weight:600; letter-spacing:.1em}
+
+  /* Title block */
+  .kicker{font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:var(--gold); margin:16px 0 7px}
+  h1{font-size:27px; line-height:1.1; letter-spacing:-.01em; max-width:18ch}
+  h1 .pop{font-style:italic; color:var(--gold)}
+  .sub{font-size:13px; color:var(--ink-2); margin-top:6px; font-family:var(--serif); font-style:italic}
+  .lede{font-size:13px; color:var(--ink-1); max-width:74ch; margin:13px 0 0}
+  .lede b{color:var(--ink-0); font-weight:600}
+
+  /* In one breath */
+  .breath{margin:16px 0 4px; padding:13px 16px; background:var(--gold-bg);
+    border:1px solid var(--line-2); border-left:3px solid var(--gold); border-radius:3px}
+  .breath h3{font-size:12px; letter-spacing:.04em; margin-bottom:4px}
+  .breath p{margin:0; font-size:12.5px; color:var(--ink-1)}
+  .breath b{color:var(--ink-0)}
+
+  /* Layout columns */
+  .cols{display:grid; grid-template-columns:1.32fr 1fr; gap:22px; margin-top:18px}
+  .section-h{font-family:var(--serif); font-size:15px; color:var(--ink-0);
+    display:flex; align-items:baseline; gap:8px; margin:0 0 9px}
+  .section-h::after{content:""; flex:1; height:1px; background:var(--line-2)}
+
+  /* Terms tiles */
+  .tiles{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  .tile{background:var(--card); border:1px solid var(--line); border-radius:5px; padding:9px 11px}
+  .tile .k{font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3)}
+  .tile .v{font-family:var(--mono); font-size:15px; color:var(--ink-0); margin-top:3px; letter-spacing:-.02em}
+  .tile .s{font-size:10px; color:var(--ink-2); margin-top:1px}
+  .tile.hero{background:linear-gradient(180deg,#fffdf8,#fbf4e6); border-color:var(--gold-soft)}
+  .tile.hero .v{color:var(--gold)}
+  .tile.full{grid-column:1 / -1; display:flex; justify-content:space-between; align-items:center}
+  .tile.full .v{font-size:13px}
+  .up{color:var(--up)} .down{color:var(--down)}
+
+  /* schematic */
+  .chart{background:var(--card); border:1px solid var(--line); border-radius:6px; padding:6px 6px 2px; margin-top:2px}
+  .chart figcaption{font-size:10px; color:var(--ink-2); padding:4px 8px 6px; line-height:1.4}
+
+  /* How it works steps */
+  ol.steps{list-style:none; counter-reset:s; margin:0; padding:0}
+  ol.steps li{counter-increment:s; position:relative; padding:0 0 11px 30px; font-size:12px; color:var(--ink-1)}
+  ol.steps li::before{content:counter(s); position:absolute; left:0; top:-1px;
+    width:20px; height:20px; border-radius:50%; background:var(--ink-0); color:var(--paper);
+    font-family:var(--mono); font-size:11px; display:grid; place-items:center}
+  ol.steps li::after{content:""; position:absolute; left:9.5px; top:21px; bottom:2px; width:1px; background:var(--line-2)}
+  ol.steps li:last-child::after{display:none}
+  ol.steps b{color:var(--ink-0)}
+
+  /* Scenarios */
+  .scen{display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-top:4px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:6px; padding:11px 12px}
+  .card .tag{font-size:9px; letter-spacing:.12em; text-transform:uppercase; font-weight:600; padding:2px 7px; border-radius:20px; display:inline-block}
+  .tag.a{background:var(--gold-bg); color:var(--gold)}
+  .tag.b{background:var(--up-bg); color:var(--up)}
+  .tag.c{background:var(--down-bg); color:var(--down)}
+  .card h4{margin:7px 0 5px; font-family:var(--serif); font-size:13.5px; color:var(--ink-0); font-weight:500}
+  .card .big{font-family:var(--mono); font-size:16px; color:var(--ink-0); letter-spacing:-.02em}
+  .card .lbl{font-size:9.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.1em}
+  .card p{margin:7px 0 0; font-size:11px; color:var(--ink-2); line-height:1.45}
+  .card p b{color:var(--ink-1)}
+
+  /* trade-off + risk */
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:18px}
+  .prose p{margin:0 0 8px; font-size:12px; color:var(--ink-1)}
+  .prose b{color:var(--ink-0)}
+  ul.ticks{margin:0; padding:0; list-style:none}
+  ul.ticks li{position:relative; padding:0 0 7px 18px; font-size:11.5px; color:var(--ink-1)}
+  ul.ticks li::before{content:""; position:absolute; left:2px; top:6px; width:6px; height:6px; border:1.4px solid var(--gold); border-radius:50%}
+  .fit{background:var(--up-bg)} .nofit{}
+  .suit{display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:2px}
+  .suit div{border:1px solid var(--line); border-radius:6px; padding:9px 11px; background:var(--card)}
+  .suit h5{margin:0 0 5px; font-size:10px; letter-spacing:.1em; text-transform:uppercase}
+  .suit.g h5{color:var(--up)} .suit.r h5{color:var(--down)}
+  .suit p{margin:0; font-size:11px; color:var(--ink-2)}
+
+  /* pricing strip */
+  .pricing{margin-top:18px; border:1px solid var(--line-2); border-radius:6px; background:var(--paper-2); padding:12px 15px}
+  .pricing h3{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-2); font-family:var(--sans); font-weight:600; margin-bottom:8px}
+  .pgrid{display:grid; grid-template-columns:repeat(5,1fr); gap:10px}
+  .pgrid .pi .k{font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3)}
+  .pgrid .pi .v{font-family:var(--mono); font-size:13px; color:var(--ink-0); margin-top:2px}
+  .pnote{font-size:10px; color:var(--ink-2); margin-top:10px; line-height:1.5}
+  .pnote b{color:var(--ink-1)}
+
+  .foot{margin-top:14px; padding-top:11px; border-top:1px solid var(--line-2); font-size:9px; color:var(--ink-3); line-height:1.5}
+  .foot b{color:var(--ink-2)}
+
+  @media print{
+    body{background:#fff}
+    .sheet{margin:0; width:auto; box-shadow:none; border:none; padding:14mm 13mm}
+    @page{size:A4; margin:0}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <!-- Masthead -->
+  <header class="mast">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" aria-hidden="true">
+        <rect x="1" y="1" width="38" height="38" rx="7" fill="none" stroke="#9a7d3f" stroke-width="1.4"/>
+        <path d="M12 12 L28 28 M28 12 L12 28" stroke="#9a7d3f" stroke-width="2.1" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="brand__name">Xie Family Office</div>
+        <div class="brand__tag">Private Wealth · Structured Solutions</div>
+      </div>
+    </div>
+    <div class="mast__r">
+      Indicative · For discussion only<br/>
+      <b>3 June 2026</b>
+      Ref: XFO-EQD-2606
+    </div>
+  </header>
+
+  <!-- Title -->
+  <div class="kicker">Equity derivatives idea · single-stock decumulator</div>
+  <h1>A disciplined way to <span class="pop">sell NVIDIA above</span> today's price.</h1>
+  <div class="sub">3-Month Daily Decumulator on NVIDIA Corp. (NASDAQ: NVDA)</div>
+
+  <p class="lede">You hold roughly <b>120,000 NVIDIA shares</b> — about <b>$26.6m</b>, and the single
+  largest line in the family book. You've said you'd like to <b>trim it into strength</b> rather than
+  sell it all at once. This note does exactly that, automatically: a little each day, at a price
+  <b>14% above where NVIDIA trades today</b> — and it costs you nothing upfront.</p>
+
+  <!-- In one breath -->
+  <div class="breath">
+    <h3>In one breath</h3>
+    <p>Every trading day for three months, you sell a slice of NVIDIA at a fixed <b>$252.75</b> —
+    <b>+14% above today's $221.79</b>. You always sell at that price, never lower. Two conditions shape it:
+    if NVIDIA <b>rallies above $252.75</b> you sell <b>double</b> that day, and if it <b>falls 5% to $210.70</b>
+    the programme simply <b>stops</b> and you keep the rest of your shares.</p>
+  </div>
+
+  <!-- Terms + chart -->
+  <div class="cols">
+    <div>
+      <div class="section-h">The deal, at a glance</div>
+      <div class="tiles">
+        <div class="tile"><div class="k">Underlying</div><div class="v">NVDA</div><div class="s">NVIDIA Corp. · NASDAQ</div></div>
+        <div class="tile"><div class="k">Reference price (today)</div><div class="v">$221.79</div><div class="s">spot, 3 Jun 2026</div></div>
+        <div class="tile hero"><div class="k">Your sale price (strike)</div><div class="v">$252.75</div><div class="s up">+14.0% above spot</div></div>
+        <div class="tile"><div class="k">Safety floor (knock-out)</div><div class="v">$210.70</div><div class="s down">−5.0% · ends the deal</div></div>
+        <div class="tile"><div class="k">Daily size</div><div class="v">500 sh</div><div class="s">1,000 if geared</div></div>
+        <div class="tile"><div class="k">Gearing</div><div class="v">2×</div><div class="s">when NVDA &gt; strike</div></div>
+        <div class="tile"><div class="k">Tenor</div><div class="v">3 months</div><div class="s">63 daily fixings</div></div>
+        <div class="tile"><div class="k">Upfront cost</div><div class="v up">$0</div><div class="s">zero-cost, fair value</div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-h">How the price levels sit</div>
+      <figure class="chart">
+        <svg viewBox="0 0 360 232" width="100%" aria-label="Schematic of strike, spot and knock-out levels with three illustrative paths">
+          <!-- zones -->
+          <rect x="44" y="14"  width="300" height="58"  fill="rgba(177,90,79,.07)"/>
+          <rect x="44" y="72"  width="300" height="78"  fill="rgba(63,125,95,.08)"/>
+          <rect x="44" y="150" width="300" height="58"  fill="rgba(120,120,120,.08)"/>
+          <!-- level lines -->
+          <line x1="44" y1="72"  x2="344" y2="72"  stroke="#9a7d3f" stroke-width="1.4" stroke-dasharray="5 3"/>
+          <line x1="44" y1="116" x2="344" y2="116" stroke="#6c6557" stroke-width="1"   stroke-dasharray="2 3"/>
+          <line x1="44" y1="150" x2="344" y2="150" stroke="#b15a4f" stroke-width="1.4" stroke-dasharray="5 3"/>
+          <!-- y labels -->
+          <text x="40" y="75"  text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#9a7d3f">252.75</text>
+          <text x="40" y="119" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#6c6557">221.79</text>
+          <text x="40" y="153" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#b15a4f">210.70</text>
+          <!-- zone captions -->
+          <text x="50" y="30"  font-family="Inter" font-size="8.5" fill="#b15a4f">Above strike → you sell 2× (geared)</text>
+          <text x="50" y="92"  font-family="Inter" font-size="8.5" fill="#3f7d5f">Sweet spot → you sell 1× at the strike</text>
+          <text x="50" y="186" font-family="Inter" font-size="8.5" fill="#6c6557">Below the floor → programme ends</text>
+          <!-- paths from spot (x=70,y=116) -->
+          <!-- B sideways -->
+          <polyline fill="none" stroke="#3f7d5f" stroke-width="1.6" opacity=".85"
+            points="70,116 110,104 150,122 190,98 230,120 270,100 310,112 338,108"/>
+          <!-- A eases down to KO then stops -->
+          <polyline fill="none" stroke="#9a7d3f" stroke-width="1.6" opacity=".9"
+            points="70,116 100,126 130,134 160,144 182,150"/>
+          <circle cx="182" cy="150" r="3" fill="#b15a4f"/>
+          <!-- C rallies up through strike -->
+          <polyline fill="none" stroke="#b15a4f" stroke-width="1.6" opacity=".85"
+            points="70,116 120,96 170,78 220,58 270,42 320,30 338,26"/>
+          <circle cx="70" cy="116" r="3" fill="#1d1b16"/>
+          <text x="72" y="128" font-family="Inter" font-size="8" fill="#1d1b16">today</text>
+        </svg>
+        <figcaption><b>Green</b> path stays in the sweet spot all quarter · <b>Gold</b> eases to the floor and knocks out early · <b>Rose</b> rallies hard, so you sell double the whole way up.</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div style="margin-top:18px">
+    <div class="section-h">How it actually works</div>
+    <div class="cols" style="margin-top:0; grid-template-columns:1fr 1fr; gap:26px">
+      <ol class="steps">
+        <li>Each trading day, the bank <b>buys 500 NVIDIA shares from you at $252.75</b> — fixed for the whole quarter, whatever the market is doing.</li>
+        <li>On any day NVDA <b>closes above $252.75</b>, you sell <b>1,000</b> shares instead of 500 (the "2× gearing"). You still get $252.75 — but you've sold more while it's rising.</li>
+        <li>If NVDA <b>closes at or below $210.70</b> (−5%), the programme <b>knocks out</b>: it ends there, no more selling, and you keep every remaining share.</li>
+      </ol>
+      <ol class="steps" start="4">
+        <li>A short <b>5-day grace window</b> at the start means the floor can't end the deal in the first week.</li>
+        <li>There is <b>no upfront premium</b> and no fee embedded in the levels — the terms are struck at fair value.</li>
+        <li>At maturity (or knock-out) it's simply <b>done</b>: you've sold whatever shares the path delivered, all at $252.75, and settled in cash.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Scenarios -->
+  <div style="margin-top:16px">
+    <div class="section-h">Three ways the quarter can play out</div>
+    <div class="scen">
+      <div class="card">
+        <span class="tag a">Most likely · ~75%</span>
+        <h4>It eases to the floor</h4>
+        <div class="big">$2.27m</div><div class="lbl">proceeds · ~9,000 sh</div>
+        <p>NVDA drifts down and touches −5% after about <b>4 weeks</b>. You'd sold <b>9,000 shares at $252.75</b> — well above where it now trades — then the deal stops and you still hold ~111,000 shares. <b>A clean, above-market trim.</b></p>
+      </div>
+      <div class="card">
+        <span class="tag b">Range-bound</span>
+        <h4>It chops sideways</h4>
+        <div class="big">$7.96m</div><div class="lbl">proceeds · 31,500 sh</div>
+        <p>NVDA stays between the floor and the strike for the full quarter. You sell <b>500 a day at $252.75</b> the whole time — <b>31,500 shares</b> decumulated at +14%. <b>The ideal outcome for this note.</b></p>
+      </div>
+      <div class="card">
+        <span class="tag c">The trade-off</span>
+        <h4>It rallies +40%</h4>
+        <div class="big">$13.14m</div><div class="lbl">proceeds · 52,000 sh</div>
+        <p>NVDA runs to ~$310. You sold <b>1,000 a day at $252.75</b> — a great absolute price, but you let go of 52,000 shares that would be worth <b>~$3.0m more</b> if simply held. <b>This is the cost: capped upside.</b></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Honest trade-off + suitability -->
+  <div class="grid2">
+    <div class="prose">
+      <div class="section-h">The honest trade-off</div>
+      <p>This is not free money — and we won't pretend it is. Because the note is struck at <b>fair, zero-cost
+      value</b>, the 14% head-start is <b>paid for</b> by the two conditions: selling double into a rally, and
+      stopping early in a sell-off. On a pure mathematical expectation they roughly offset.</p>
+      <p>What you are really buying is <b>certainty and discipline</b>: a guaranteed above-market exit on whatever
+      shares trade, and a structured, unemotional way to reduce a position you've already decided is fully valued.
+      <b>You never sell below today's price.</b> The thing you give up is the home-run — the scenario where NVDA
+      doubles and you'd rather have held it all.</p>
+    </div>
+    <div>
+      <div class="section-h">Who it suits</div>
+      <div class="suit">
+        <div class="suit g">
+          <h5>Good fit if you…</h5>
+          <p>want to lighten NVDA, think it's fully valued or range-bound near-term, and value a disciplined exit above today's price.</p>
+        </div>
+        <div class="suit r">
+          <h5>Think twice if you…</h5>
+          <p>are still outright bullish, need to sell the whole line by a fixed date, or can't accept selling 2× into a sharp rally.</p>
+        </div>
+      </div>
+      <ul class="ticks" style="margin-top:10px">
+        <li><b>Knock-out is ~75% likely</b> — expect a short life of ~3 weeks, not a full quarter.</li>
+        <li>You keep full <b>ownership and dividends</b> on shares until each is sold.</li>
+        <li>Counterparty is the issuing bank; settlement is cash against delivery at each fixing.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Pricing & data -->
+  <div class="pricing">
+    <h3>Pricing &amp; market data — as of 3 June 2026 close</h3>
+    <div class="pgrid">
+      <div class="pi"><div class="k">NVDA spot</div><div class="v">$221.79</div></div>
+      <div class="pi"><div class="k">3-mo implied vol</div><div class="v">43%</div></div>
+      <div class="pi"><div class="k">3-mo USD rate</div><div class="v">3.83%</div></div>
+      <div class="pi"><div class="k">Dividend yield</div><div class="v">0.02%</div></div>
+      <div class="pi"><div class="k">3-mo forward</div><div class="v">$223.91</div></div>
+    </div>
+    <p class="pnote"><b>Method.</b> The enhanced sale price is solved by Monte-Carlo simulation (300,000 risk-neutral
+    price paths, daily steps, geometric-Brownian dynamics) so the present value of all embedded cashflows — daily
+    sales at the strike, 2× gearing above it, and the −5% knock-out — nets to <b>zero at inception</b>. At those
+    terms the fair strike is <b>$252.75 (+14.0% vs spot, +12.9% vs the 3-month forward)</b>. Across simulations the
+    note knocks out <b>~75%</b> of the time (expected ~day&nbsp;22) and decumulates <b>~17,600 shares on average</b>
+    (5th–95th percentile: 2,500–54,500). <b>Sources:</b> spot &amp; dividend — stockanalysis.com; implied vol —
+    MarketChameleon / option term structure; USD rate — U.S. Treasury 3-month bill.</p>
+  </div>
+
+  <!-- Disclaimer -->
+  <div class="foot">
+    <b>Important.</b> This one-pager is indicative and for discussion only. It is a private, non-binding illustration
+    prepared by Xie Family Office for the family's own use; it is <b>not</b> an offer, a solicitation, investment
+    advice, or a term sheet, and it is not a product of any bank. Figures are model estimates based on the market data
+    shown and standard option-pricing assumptions; <b>actual dealer quotes will differ</b> and will include the bank's
+    spread. A decumulator can <b>oblige you to sell shares (at 2× size) below the prevailing market</b> and can end
+    early, capping the quantity sold; you give up upside above the strike. Volatility is an assumption, not a
+    guarantee. Past performance and simulated outcomes do not predict future results. Obtain independent tax and legal
+    advice before transacting. © 2026 Xie Family Office.
+  </div>
+
+</div>
+</body>
+</html>
